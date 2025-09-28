@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+/* Custom styles for genomics analytics dashboard */
+
+:root {
+	/* Light theme genomics colors */
+	--color-dna-a: #e74c3c;
+	--color-dna-t: #3498db;
+	--color-dna-g: #f39c12;
+	--color-dna-c: #27ae60;
+
+	/* Data visualization colors */
+	--color-bacteria: #2563eb;
+	--color-archaea: #dc2626;
+	--color-quality-high: #059669;
+	--color-quality-medium: #d97706;
+	--color-quality-low: #dc2626;
+}
+
+.dark {
+	/* Dark theme genomics colors */
+	--color-dna-a: #ff6b6b;
+	--color-dna-t: #4dabf7;
+	--color-dna-g: #ffd43b;
+	--color-dna-c: #51cf66;
+
+	/* Data visualization colors for dark mode */
+	--color-bacteria: #60a5fa;
+	--color-archaea: #f87171;
+	--color-quality-high: #34d399;
+	--color-quality-medium: #fbbf24;
+	--color-quality-low: #f87171;
+}
+
+/* Custom chart styling */
+.chart-container {
+	@apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6;
+}
+
+.chart-title {
+	@apply text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4;
+}
+
+.chart-subtitle {
+	@apply text-sm text-gray-600 dark:text-gray-400 mb-2;
+}
+
+/* Analytics dashboard grid */
+.analytics-grid {
+	@apply grid gap-6;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.analytics-card {
+	@apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700;
+}
+
+.analytics-metric {
+	@apply text-3xl font-bold text-blue-600 dark:text-blue-400;
+}
+
+.analytics-label {
+	@apply text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide;
+}
+
+/* Data quality indicators */
+.quality-high {
+	@apply text-green-600 dark:text-green-400;
+}
+
+.quality-medium {
+	@apply text-yellow-600 dark:text-yellow-400;
+}
+
+.quality-low {
+	@apply text-red-600 dark:text-red-400;
+}
+
+/* Loading states */
+.loading-pulse {
+	@apply animate-pulse bg-gray-200 dark:bg-gray-700;
+}
+
+/* Interactive elements */
+.interactive-hover {
+	@apply transition-all duration-200 hover:shadow-lg hover:scale-105;
+}
+
+/* Typography for scientific data */
+.mono-data {
+	@apply font-mono text-sm;
+}
+
+.scientific-notation {
+	@apply font-mono text-xs text-gray-600 dark:text-gray-400;
+}
+
+/* Custom scrollbar for data tables */
+.custom-scrollbar::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	@apply bg-gray-100 dark:bg-gray-800;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	@apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	@apply bg-gray-400 dark:bg-gray-500;
+}
