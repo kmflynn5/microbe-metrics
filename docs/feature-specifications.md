@@ -7,6 +7,7 @@
 **Primary Goal:** Create an automated data pipeline that monitors the JGI Data Portal for new bacterial/archaeal genome projects, extracts rich metadata, and generates interactive analytics dashboards showcasing genomics research trends and pipeline engineering excellence.
 
 **Tech Stack:**
+
 - **Frontend:** SvelteKit (static site generation)
 - **Storage:** Cloudflare R2 for processed metadata and analytics
 - **Processing:** Cloudflare Workers for automated data pipeline
@@ -29,6 +30,7 @@ JGI Data Portal API → Cloudflare Worker → R2 Storage → DuckDB → Evidence
 ### Core Infrastructure + Analytics Observability
 
 **Cloudflare Worker Setup:**
+
 - Daily scheduled worker to extract JGI metadata
 - Process and validate organism project data
 - Store processed analytics and metadata in R2
@@ -36,6 +38,7 @@ JGI Data Portal API → Cloudflare Worker → R2 Storage → DuckDB → Evidence
 - **Advanced analytics metrics collection and trend analysis**
 
 **Analytics Observability Dashboard:**
+
 - Real-time metadata processing statistics
 - Genomics research trend analysis and forecasting
 - Data quality monitoring and validation
@@ -43,6 +46,7 @@ JGI Data Portal API → Cloudflare Worker → R2 Storage → DuckDB → Evidence
 - Anomaly detection and alerting
 
 **R2 Storage Structure:**
+
 ```
 genomics-data/
 ├── raw/
@@ -86,9 +90,9 @@ genomics-data/
 interface OrganismRecord {
   jgi_organism_id: string;
   organism_name: string;
-  organism_type: 'Bacteria' | 'Archaea';
+  organism_type: "Bacteria" | "Archaea";
   ncbi_taxon_id: string;
-  
+
   // Taxonomy
   superkingdom: string;
   phylum: string;
@@ -98,45 +102,45 @@ interface OrganismRecord {
   genus: string;
   species: string;
   strain?: string;
-  
+
   // Project Information
   proposal_id: string;
   project_name: string;
   sequencing_center: string;
   principal_investigator: string;
   project_status: string;
-  
+
   // Dates and Timeline
   date_added: string;
   date_modified: string;
   project_start_date?: string;
   project_completion_date?: string;
   publication_date?: string;
-  
+
   // Genome Characteristics
   genome_size_bp?: number;
   gene_count?: number;
   assembly_method?: string;
   sequencing_technology?: string;
   assembly_quality?: string;
-  
+
   // Quality Metrics
   checkm_completeness?: number;
   checkm_contamination?: number;
   n50_value?: number;
   contig_count?: number;
-  
+
   // Cross-references
   genbank_accession?: string;
   ncbi_bioproject?: string;
   img_taxon_oid?: string;
   gold_project_id?: string;
-  
+
   // File and Data Metadata
   total_files: number;
   file_types: string[];
   data_size_gb?: number;
-  
+
   // Processing Metadata
   extraction_date: string;
   data_quality_score: number;
@@ -149,14 +153,17 @@ interface ProjectAnalytics {
   new_bacteria_projects: number;
   new_archaea_projects: number;
   completed_projects: number;
-  
+
   // Sequencing Center Analytics
-  center_activity: Record<string, {
-    projects: number;
-    completion_rate: number;
-    avg_project_duration_days: number;
-  }>;
-  
+  center_activity: Record<
+    string,
+    {
+      projects: number;
+      completion_rate: number;
+      avg_project_duration_days: number;
+    }
+  >;
+
   // Taxonomic Diversity
   taxonomic_diversity: {
     new_phyla: number;
@@ -166,7 +173,7 @@ interface ProjectAnalytics {
     total_genera: number;
     total_species: number;
   };
-  
+
   // Quality Trends
   quality_trends: {
     avg_completeness: number;
@@ -174,14 +181,14 @@ interface ProjectAnalytics {
     high_quality_genomes: number; // >95% complete, <5% contamination
     assembly_quality_distribution: Record<string, number>;
   };
-  
+
   // Project Timeline Analytics
   timeline_metrics: {
     avg_project_duration_days: number;
     projects_in_progress: number;
     completion_acceleration: number; // rate of change
   };
-  
+
   // Technology and Methods
   technology_adoption: {
     sequencing_technologies: Record<string, number>;
@@ -195,7 +202,7 @@ interface PipelineRun {
   start_time: string;
   end_time: string;
   duration_ms: number;
-  status: 'success' | 'partial_success' | 'failure';
+  status: "success" | "partial_success" | "failure";
   organisms_processed: number;
   organisms_added: number;
   organisms_updated: number;
@@ -256,116 +263,163 @@ interface DataQualityMetrics {
 ### JGI API Integration
 
 **Worker Functions:**
+
 ```typescript
 // src/workers/genomics-analytics.ts
-import { AnalyticsMetrics } from './analytics-metrics';
+import { AnalyticsMetrics } from "./analytics-metrics";
 
 export default {
   async scheduled(event: ScheduledEvent, env: Env) {
     const metrics = new AnalyticsMetrics(env);
     const runId = crypto.randomUUID();
-    
+
     await metrics.startRun(runId);
-    
+
     try {
       const results = await syncOrganismMetadata(env, metrics, runId);
       await generateProjectAnalytics(env, metrics, runId);
       await updateTrendAnalysis(env, metrics, runId);
       await generateEvidenceReports(env, metrics, runId);
-      
-      await metrics.completeRun(runId, 'success', results);
+
+      await metrics.completeRun(runId, "success", results);
     } catch (error) {
-      await metrics.completeRun(runId, 'failure', { error: error.message });
+      await metrics.completeRun(runId, "failure", { error: error.message });
       throw error;
     }
-  }
-}
+  },
+};
 
-async function syncOrganismMetadata(env: Env, metrics: AnalyticsMetrics, runId: string) {
+async function syncOrganismMetadata(
+  env: Env,
+  metrics: AnalyticsMetrics,
+  runId: string,
+) {
   const startTime = Date.now();
-  
+
   // Track memory and performance
   const memoryStart = await metrics.getCurrentMemoryUsage();
-  
+
   // Fetch organism metadata with detailed tracking
-  const jgiResponse = await fetch(buildJGISearchUrl('bacteria'), {
-    signal: AbortSignal.timeout(30000)
+  const jgiResponse = await fetch(buildJGISearchUrl("bacteria"), {
+    signal: AbortSignal.timeout(30000),
   });
-  
-  metrics.recordApiCall(runId, 'jgi_bacteria_search', jgiResponse.status, Date.now() - startTime);
-  
-  const responseSize = parseInt(jgiResponse.headers.get('content-length') || '0');
-  metrics.recordDataTransfer(runId, responseSize, 'api_response');
-  
+
+  metrics.recordApiCall(
+    runId,
+    "jgi_bacteria_search",
+    jgiResponse.status,
+    Date.now() - startTime,
+  );
+
+  const responseSize = parseInt(
+    jgiResponse.headers.get("content-length") || "0",
+  );
+  metrics.recordDataTransfer(runId, responseSize, "api_response");
+
   const bacteriaData = await jgiResponse.json();
-  
+
   // Process metadata with detailed performance tracking
   const processingStart = Date.now();
-  const processedOrganisms = await processOrganismMetadata(bacteriaData, metrics, runId);
-  metrics.recordProcessingTime(runId, 'metadata_extraction', Date.now() - processingStart);
-  
+  const processedOrganisms = await processOrganismMetadata(
+    bacteriaData,
+    metrics,
+    runId,
+  );
+  metrics.recordProcessingTime(
+    runId,
+    "metadata_extraction",
+    Date.now() - processingStart,
+  );
+
   // Data quality assessment
   const qualityStart = Date.now();
-  const qualityMetrics = await assessDataQuality(processedOrganisms, metrics, runId);
-  metrics.recordProcessingTime(runId, 'quality_assessment', Date.now() - qualityStart);
-  
+  const qualityMetrics = await assessDataQuality(
+    processedOrganisms,
+    metrics,
+    runId,
+  );
+  metrics.recordProcessingTime(
+    runId,
+    "quality_assessment",
+    Date.now() - qualityStart,
+  );
+
   // Store in R2 with tracking
   const storageStart = Date.now();
   await storeProcessedMetadata(processedOrganisms, env, metrics, runId);
-  metrics.recordProcessingTime(runId, 'r2_storage', Date.now() - storageStart);
-  
+  metrics.recordProcessingTime(runId, "r2_storage", Date.now() - storageStart);
+
   // Update DuckDB analytics
   const analyticsStart = Date.now();
   await updateAnalyticsDatabase(processedOrganisms, env, metrics, runId);
-  metrics.recordProcessingTime(runId, 'analytics_update', Date.now() - analyticsStart);
-  
+  metrics.recordProcessingTime(
+    runId,
+    "analytics_update",
+    Date.now() - analyticsStart,
+  );
+
   const memoryPeak = await metrics.getCurrentMemoryUsage();
   metrics.recordMemoryUsage(runId, memoryStart, memoryPeak);
-  
+
   return {
     organismsProcessed: processedOrganisms.length,
-    newOrganisms: processedOrganisms.filter(o => o.is_new).length,
-    updatedOrganisms: processedOrganisms.filter(o => o.is_updated).length,
+    newOrganisms: processedOrganisms.filter((o) => o.is_new).length,
+    updatedOrganisms: processedOrganisms.filter((o) => o.is_updated).length,
     qualityScore: qualityMetrics.overall_score,
-    dataSize: responseSize
+    dataSize: responseSize,
   };
 }
 
-async function generateProjectAnalytics(env: Env, metrics: AnalyticsMetrics, runId: string) {
+async function generateProjectAnalytics(
+  env: Env,
+  metrics: AnalyticsMetrics,
+  runId: string,
+) {
   // Generate comprehensive project analytics
   const analyticsQueries = [
-    'project_completion_trends',
-    'taxonomic_diversity_analysis', 
-    'sequencing_center_performance',
-    'quality_metric_distributions',
-    'technology_adoption_patterns'
+    "project_completion_trends",
+    "taxonomic_diversity_analysis",
+    "sequencing_center_performance",
+    "quality_metric_distributions",
+    "technology_adoption_patterns",
   ];
-  
+
   const analyticsResults = {};
-  
+
   for (const queryType of analyticsQueries) {
     const queryStart = Date.now();
-    
+
     try {
       const result = await executeDuckDBAnalytics(queryType, env);
       analyticsResults[queryType] = result;
-      
-      metrics.recordProcessingTime(runId, `analytics_${queryType}`, Date.now() - queryStart);
-      metrics.recordAnalyticsMetric(runId, queryType, 'success', result.row_count);
-      
+
+      metrics.recordProcessingTime(
+        runId,
+        `analytics_${queryType}`,
+        Date.now() - queryStart,
+      );
+      metrics.recordAnalyticsMetric(
+        runId,
+        queryType,
+        "success",
+        result.row_count,
+      );
     } catch (error) {
-      metrics.recordAnalyticsMetric(runId, queryType, 'failed', 0);
+      metrics.recordAnalyticsMetric(runId, queryType, "failed", 0);
       console.error(`Analytics query ${queryType} failed:`, error);
     }
   }
-  
+
   return analyticsResults;
 }
 
 class AnalyticsMetrics {
   constructor(private env: Env) {}
-  
-  async recordDataQuality(runId: string, qualityMetrics: DataQualityAssessment) {
+
+  async recordDataQuality(
+    runId: string,
+    qualityMetrics: DataQualityAssessment,
+  ) {
     // Track data quality metrics over time
     const qualityRecord = {
       run_id: runId,
@@ -376,26 +430,35 @@ class AnalyticsMetrics {
       timeliness_score: qualityMetrics.timeliness_score,
       overall_score: qualityMetrics.overall_score,
       anomalies_detected: qualityMetrics.anomalies.length,
-      validation_errors: qualityMetrics.validation_errors.length
+      validation_errors: qualityMetrics.validation_errors.length,
     };
-    
+
     await this.env.GENOMICS_DATA.put(
       `metrics/quality/data-quality-${runId}.json`,
-      JSON.stringify(qualityRecord)
+      JSON.stringify(qualityRecord),
     );
   }
-  
-  async recordAnalyticsMetric(runId: string, queryType: string, status: string, rowCount: number) {
+
+  async recordAnalyticsMetric(
+    runId: string,
+    queryType: string,
+    status: string,
+    rowCount: number,
+  ) {
     // Track analytics performance and results
   }
-  
-  async recordDataDiscovery(runId: string, discoveryMetrics: DataDiscoveryMetrics) {
+
+  async recordDataDiscovery(
+    runId: string,
+    discoveryMetrics: DataDiscoveryMetrics,
+  ) {
     // Track new data discoveries and patterns
   }
 }
 ```
 
 **MVP API Endpoints:**
+
 - Extract recent organism metadata (bacteria/archaea)
 - Filter by project status, sequencing center, quality metrics
 - Extract comprehensive project and taxonomy information
@@ -408,57 +471,69 @@ class AnalyticsMetrics {
 
 ```markdown
 # Genomics Research Analytics Dashboard
-*Generated: {{current_date}}*
+
+_Generated: {{current_date}}_
 
 ## Executive Summary
+
 - **Total Projects Tracked:** {{total_projects}}
 - **Active Sequencing Centers:** {{active_centers}}
 - **Projects Completed This Quarter:** {{quarterly_completions}}
 - **Average Project Duration:** {{avg_project_duration}} days
 
 ## Project Completion Analytics
+
 - **Bacterial Projects:** {{bacteria_completed}} completed ({{bacteria_completion_rate}}% rate)
 - **Archaeal Projects:** {{archaea_completed}} completed ({{archaea_completion_rate}}% rate)
 - **Completion Velocity Trend:** {{velocity_trend}} ({{trend_direction}})
 
 ## Taxonomic Discovery Insights
+
 - **New Genera Discovered:** {{new_genera_count}}
 - **New Species Identified:** {{new_species_count}}
 - **Taxonomic Diversity Index:** {{diversity_index}}
 - **Most Active Research Areas:** {{top_phyla}}
 
 ## Quality Metrics Evolution
+
 - **Average Assembly Completeness:** {{avg_completeness}}%
 - **High-Quality Genomes (>95% complete, <5% contamination):** {{high_quality_count}}
 - **Quality Improvement Trend:** {{quality_trend}}
 - **Technology Impact on Quality:** {{technology_quality_correlation}}
 
 ## Sequencing Center Performance
+
 {{#each center_performance}}
+
 ### {{center_name}}
+
 - **Projects Completed:** {{projects_completed}}
 - **Average Turnaround:** {{avg_turnaround}} days
 - **Quality Score:** {{quality_score}}
 - **Efficiency Rank:** {{efficiency_rank}}
-{{/each}}
+  {{/each}}
 
 ## Technology Adoption Trends
+
 - **Emerging Technologies:** {{emerging_tech}}
 - **Most Adopted Methods:** {{popular_methods}}
 - **Technology-Quality Correlation:** {{tech_quality_impact}}
 
 ## Predictive Analytics
+
 - **Projected Completions Next Quarter:** {{projected_completions}}
 - **Capacity Utilization Forecast:** {{capacity_forecast}}
 - **Quality Trend Prediction:** {{quality_prediction}}
 
 ---
-*Data sourced from [JGI Data Portal](https://data.jgi.doe.gov/) | Analytics updated every 24 hours*
+
+_Data sourced from [JGI Data Portal](https://data.jgi.doe.gov/) | Analytics updated every 24 hours_
 ```
 
 ### SvelteKit Dashboard (Analytics-Focused)
 
 **Page Structure:**
+
 ```
 src/routes/
 ├── +layout.svelte              # Global layout with navigation
@@ -516,26 +591,28 @@ src/routes/
 ```
 
 **Data Loading Strategy:**
+
 ```typescript
 // src/routes/analytics/+page.js
 export async function load({ fetch }) {
   // Load comprehensive analytics from DuckDB via API
   // Parse trends and forecasting data
   // Return dashboard analytics
-  
-  const [projectTrends, qualityMetrics, taxonomyAnalytics, centerPerformance] = await Promise.all([
-    fetch('/api/analytics/project-trends').then(r => r.json()),
-    fetch('/api/analytics/quality-metrics').then(r => r.json()),
-    fetch('/api/analytics/taxonomy-diversity').then(r => r.json()),
-    fetch('/api/analytics/center-performance').then(r => r.json())
-  ]);
-  
+
+  const [projectTrends, qualityMetrics, taxonomyAnalytics, centerPerformance] =
+    await Promise.all([
+      fetch("/api/analytics/project-trends").then((r) => r.json()),
+      fetch("/api/analytics/quality-metrics").then((r) => r.json()),
+      fetch("/api/analytics/taxonomy-diversity").then((r) => r.json()),
+      fetch("/api/analytics/center-performance").then((r) => r.json()),
+    ]);
+
   return {
     projectTrends,
     qualityMetrics,
     taxonomyAnalytics,
     centerPerformance,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
   };
 }
 ```
@@ -543,6 +620,7 @@ export async function load({ fetch }) {
 ### MVP Success Criteria
 
 **Week 1 Deliverables:**
+
 - [ ] JGI API metadata extraction pipeline working reliably
 - [ ] R2 storage with organized metadata and analytics
 - [ ] DuckDB analytics database with complex queries
@@ -566,6 +644,7 @@ export async function load({ fetch }) {
   - [ ] Automated trend detection and significance testing
 
 **Key Analytics Metrics Exposed:**
+
 - **Discovery Analytics:** New species/genera identification rates, taxonomic novelty scoring
 - **Project Velocity:** Completion rates by center, average project duration trends
 - **Quality Evolution:** Assembly quality improvements over time, contamination trends
@@ -579,19 +658,20 @@ export async function load({ fetch }) {
 ### Enhanced Analytics Dashboard
 
 **Advanced Genomics Analytics:**
+
 ```svelte
 <!-- src/lib/components/GenomicsAnalytics.svelte -->
 <script>
   import * as d3 from 'd3';
   import { onMount } from 'svelte';
-  
+
   export let analyticsData;
   export let width = 1200;
   export let height = 600;
-  
+
   // Interactive analytics visualizations
   // - Project completion velocity trends
-  // - Taxonomic diversity heatmaps  
+  // - Taxonomic diversity heatmaps
   // - Quality distribution violin plots
   // - Technology adoption timelines
   // - Predictive completion forecasting
@@ -599,6 +679,7 @@ export async function load({ fetch }) {
 ```
 
 **Real-Time Analytics Features:**
+
 - Interactive trend analysis with brushing and zooming
 - Comparative analytics across sequencing centers
 - Predictive modeling for project completion times
@@ -609,6 +690,7 @@ export async function load({ fetch }) {
 ### Advanced Data Processing
 
 **Analytics Pipeline Enhancements:**
+
 ```typescript
 interface AdvancedAnalytics {
   trend_analysis: {
@@ -617,19 +699,19 @@ interface AdvancedAnalytics {
     technology_adoption: TrendData[];
     seasonal_patterns: SeasonalData[];
   };
-  
+
   predictive_models: {
     completion_forecasting: PredictionModel;
     quality_prediction: QualityModel;
     discovery_rate_model: DiscoveryModel;
   };
-  
+
   comparative_analysis: {
     center_benchmarking: BenchmarkData[];
     technology_comparison: ComparisonData[];
     quality_correlations: CorrelationMatrix;
   };
-  
+
   anomaly_detection: {
     statistical_outliers: AnomalyData[];
     pattern_deviations: PatternData[];
@@ -639,6 +721,7 @@ interface AdvancedAnalytics {
 ```
 
 **Cross-Database Integration:**
+
 - NCBI taxonomy validation and enrichment
 - GenBank cross-reference verification
 - IMG database metadata correlation
@@ -648,6 +731,7 @@ interface AdvancedAnalytics {
 ### Enhanced Visualization Components
 
 **Interactive Analytics Charts:**
+
 - Multi-dimensional scatter plots with clustering
 - Time-series forecasting with confidence intervals
 - Geographic distribution mapping
@@ -656,6 +740,7 @@ interface AdvancedAnalytics {
 - Quality metric distribution analysis
 
 **Dashboard Features:**
+
 - Real-time data updates with WebSocket connections
 - Interactive filtering and drill-down capabilities
 - Export functionality for charts and data
@@ -666,23 +751,24 @@ interface AdvancedAnalytics {
 ### DuckDB Analytical Queries
 
 **Organism and Project Analytics:**
+
 ```sql
 -- Project completion velocity analysis
 WITH project_timelines AS (
-  SELECT 
+  SELECT
     sequencing_center,
     DATE_TRUNC('month', project_start_date) as start_month,
     DATE_TRUNC('month', project_completion_date) as completion_month,
     DATEDIFF('day', project_start_date, project_completion_date) as duration_days,
     organism_type,
     COUNT(*) as project_count
-  FROM organisms 
-  WHERE project_start_date IS NOT NULL 
+  FROM organisms
+  WHERE project_start_date IS NOT NULL
     AND project_completion_date IS NOT NULL
     AND project_start_date >= '2020-01-01'
   GROUP BY sequencing_center, start_month, completion_month, organism_type
 )
-SELECT 
+SELECT
   sequencing_center,
   organism_type,
   AVG(duration_days) as avg_project_duration,
@@ -696,7 +782,7 @@ ORDER BY avg_project_duration ASC;
 
 -- Taxonomic diversity discovery patterns
 WITH discovery_timeline AS (
-  SELECT 
+  SELECT
     DATE_TRUNC('quarter', date_added) as discovery_quarter,
     phylum,
     genus,
@@ -704,21 +790,21 @@ WITH discovery_timeline AS (
     COUNT(*) as organism_count,
     COUNT(DISTINCT genus) as unique_genera,
     COUNT(DISTINCT species) as unique_species
-  FROM organisms 
+  FROM organisms
   WHERE date_added >= '2020-01-01'
   GROUP BY discovery_quarter, phylum, genus, species
 ),
 quarterly_diversity AS (
-  SELECT 
+  SELECT
     discovery_quarter,
     COUNT(DISTINCT phylum) as phyla_discovered,
-    COUNT(DISTINCT genus) as genera_discovered, 
+    COUNT(DISTINCT genus) as genera_discovered,
     COUNT(DISTINCT species) as species_discovered,
     SUM(organism_count) as total_organisms
   FROM discovery_timeline
   GROUP BY discovery_quarter
 )
-SELECT 
+SELECT
   discovery_quarter,
   phyla_discovered,
   genera_discovered,
@@ -733,7 +819,7 @@ FROM quarterly_diversity
 ORDER BY discovery_quarter DESC;
 
 -- Quality metrics evolution and technology impact
-SELECT 
+SELECT
   DATE_TRUNC('year', date_added) as analysis_year,
   sequencing_technology,
   assembly_method,
@@ -746,7 +832,7 @@ SELECT
   AVG(gene_count) as avg_gene_count,
   -- Technology adoption rate
   COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY analysis_year) as adoption_percentage
-FROM organisms 
+FROM organisms
 WHERE date_added >= '2018-01-01'
   AND checkm_completeness IS NOT NULL
   AND checkm_contamination IS NOT NULL
@@ -756,7 +842,7 @@ ORDER BY analysis_year DESC, adoption_percentage DESC;
 
 -- Sequencing center performance benchmarking
 WITH center_performance AS (
-  SELECT 
+  SELECT
     sequencing_center,
     DATE_TRUNC('month', date_added) as performance_month,
     COUNT(*) as organisms_completed,
@@ -764,13 +850,13 @@ WITH center_performance AS (
     AVG(DATEDIFF('day', project_start_date, project_completion_date)) as avg_turnaround_days,
     COUNT(DISTINCT phylum) as taxonomic_diversity,
     SUM(CASE WHEN checkm_completeness >= 95 AND checkm_contamination <= 5 THEN 1 ELSE 0 END) as high_quality_genomes
-  FROM organisms 
+  FROM organisms
   WHERE date_added >= '2022-01-01'
     AND project_start_date IS NOT NULL
     AND project_completion_date IS NOT NULL
   GROUP BY sequencing_center, performance_month
 )
-SELECT 
+SELECT
   sequencing_center,
   AVG(organisms_completed) as avg_monthly_output,
   AVG(avg_quality) as overall_avg_quality,
@@ -790,7 +876,7 @@ ORDER BY overall_avg_quality DESC, avg_monthly_output DESC;
 
 -- Anomaly detection in organism metadata patterns
 WITH metadata_patterns AS (
-  SELECT 
+  SELECT
     DATE_TRUNC('week', date_added) as week_added,
     organism_type,
     phylum,
@@ -799,26 +885,26 @@ WITH metadata_patterns AS (
     AVG(checkm_completeness) as avg_completeness,
     COUNT(*) as organism_count,
     STDDEV(genome_size_bp) as genome_size_std
-  FROM organisms 
+  FROM organisms
   WHERE date_added >= '2023-01-01'
   GROUP BY week_added, organism_type, phylum
   HAVING COUNT(*) >= 5  -- Minimum for statistical significance
 ),
 anomaly_detection AS (
-  SELECT 
+  SELECT
     *,
     -- Statistical anomaly detection using z-scores
-    (avg_genome_size - AVG(avg_genome_size) OVER (PARTITION BY organism_type, phylum)) / 
+    (avg_genome_size - AVG(avg_genome_size) OVER (PARTITION BY organism_type, phylum)) /
     NULLIF(STDDEV(avg_genome_size) OVER (PARTITION BY organism_type, phylum), 0) as genome_size_zscore,
-    
-    (avg_completeness - AVG(avg_completeness) OVER (PARTITION BY organism_type, phylum)) / 
+
+    (avg_completeness - AVG(avg_completeness) OVER (PARTITION BY organism_type, phylum)) /
     NULLIF(STDDEV(avg_completeness) OVER (PARTITION BY organism_type, phylum), 0) as completeness_zscore,
-    
-    (organism_count - AVG(organism_count) OVER (PARTITION BY organism_type)) / 
+
+    (organism_count - AVG(organism_count) OVER (PARTITION BY organism_type)) /
     NULLIF(STDDEV(organism_count) OVER (PARTITION BY organism_type), 0) as count_zscore
   FROM metadata_patterns
 )
-SELECT 
+SELECT
   week_added,
   organism_type,
   phylum,
@@ -826,7 +912,7 @@ SELECT
   avg_genome_size / 1000000.0 as avg_genome_size_mbp,
   avg_completeness,
   -- Flag potential anomalies
-  CASE 
+  CASE
     WHEN ABS(genome_size_zscore) > 3 THEN 'genome_size_anomaly'
     WHEN ABS(completeness_zscore) > 3 THEN 'quality_anomaly'
     WHEN ABS(count_zscore) > 2.5 THEN 'volume_anomaly'
@@ -841,7 +927,7 @@ ORDER BY week_added DESC, ABS(genome_size_zscore) DESC;
 
 -- Predictive analytics for project completion forecasting
 WITH project_features AS (
-  SELECT 
+  SELECT
     jgi_organism_id,
     sequencing_center,
     organism_type,
@@ -854,13 +940,13 @@ WITH project_features AS (
     checkm_completeness,
     checkm_contamination,
     genome_size_bp
-  FROM organisms 
-  WHERE project_start_date IS NOT NULL 
+  FROM organisms
+  WHERE project_start_date IS NOT NULL
     AND project_completion_date IS NOT NULL
     AND date_added >= '2020-01-01'
 ),
 duration_models AS (
-  SELECT 
+  SELECT
     sequencing_center,
     organism_type,
     sequencing_technology,
@@ -876,7 +962,7 @@ duration_models AS (
   GROUP BY sequencing_center, organism_type, sequencing_technology
   HAVING COUNT(*) >= 10
 )
-SELECT 
+SELECT
   sequencing_center,
   organism_type,
   sequencing_technology,
@@ -898,10 +984,11 @@ ORDER BY coefficient_of_variation ASC, historical_projects DESC;
 ```
 
 **🔥 Advanced Analytics Queries:**
+
 ```sql
 -- Cross-validation with external genomics databases
 WITH external_validation AS (
-  SELECT 
+  SELECT
     o.jgi_organism_id,
     o.organism_name,
     o.ncbi_taxon_id,
@@ -912,7 +999,7 @@ WITH external_validation AS (
     CASE WHEN o.ncbi_taxon_id IS NOT NULL THEN 'ncbi_linked' ELSE 'ncbi_missing' END as ncbi_status,
     CASE WHEN o.genbank_accession IS NOT NULL THEN 'genbank_linked' ELSE 'genbank_missing' END as genbank_status,
     -- Data consistency checks
-    CASE 
+    CASE
       WHEN o.genome_size_bp BETWEEN 100000 AND 50000000 THEN 'size_normal'
       WHEN o.genome_size_bp < 100000 THEN 'size_too_small'
       WHEN o.genome_size_bp > 50000000 THEN 'size_unusually_large'
@@ -922,7 +1009,7 @@ WITH external_validation AS (
   WHERE o.date_added >= '2023-01-01'
 ),
 validation_summary AS (
-  SELECT 
+  SELECT
     DATE_TRUNC('month', date_added) as validation_month,
     COUNT(*) as total_organisms,
     COUNT(CASE WHEN ncbi_status = 'ncbi_linked' THEN 1 END) as ncbi_linked_count,
@@ -934,7 +1021,7 @@ validation_summary AS (
   JOIN external_validation ev ON o.jgi_organism_id = ev.jgi_organism_id
   GROUP BY validation_month
 )
-SELECT 
+SELECT
   validation_month,
   total_organisms,
   ncbi_linked_count * 100.0 / total_organisms as ncbi_linkage_rate,
@@ -944,7 +1031,7 @@ SELECT
   small_size_anomalies,
   -- Data quality trend
   LAG(ncbi_linked_count * 100.0 / total_organisms) OVER (ORDER BY validation_month) as prev_ncbi_rate,
-  (ncbi_linked_count * 100.0 / total_organisms) - 
+  (ncbi_linked_count * 100.0 / total_organisms) -
   LAG(ncbi_linked_count * 100.0 / total_organisms) OVER (ORDER BY validation_month) as ncbi_rate_change
 FROM validation_summary
 ORDER BY validation_month DESC;
@@ -953,6 +1040,7 @@ ORDER BY validation_month DESC;
 ### Interactive Dashboard Components
 
 **Advanced Dashboard Features:**
+
 - Real-time search with autocomplete
 - Advanced filtering (size, quality, taxonomy, date ranges)
 - Sortable data tables with pagination and virtualization
@@ -962,6 +1050,7 @@ ORDER BY validation_month DESC;
 - Custom alert configuration and notification system
 
 **Enhanced Evidence MD:**
+
 - Automated trend analysis with statistical significance testing
 - Quality distribution reports with percentile analysis
 - Taxonomic diversity metrics and discovery rate forecasting
@@ -974,12 +1063,13 @@ ORDER BY validation_month DESC;
 ### Data Pipeline Enhancements
 
 **Advanced Processing with Full Observability:**
+
 ```typescript
 interface AlertRule {
   id: string;
   name: string;
   condition: string; // SQL-like condition
-  severity: 'warning' | 'error' | 'critical';
+  severity: "warning" | "error" | "critical";
   notification_channels: string[];
   cooldown_minutes: number;
 }
@@ -987,41 +1077,42 @@ interface AlertRule {
 // Example alert rules
 const alertRules: AlertRule[] = [
   {
-    id: 'data-quality-drop',
-    name: 'Data Quality Score Drop',
-    condition: 'avg_data_quality_score < 0.85 OVER last_1_day',
-    severity: 'error',
-    notification_channels: ['email', 'slack'],
-    cooldown_minutes: 240
+    id: "data-quality-drop",
+    name: "Data Quality Score Drop",
+    condition: "avg_data_quality_score < 0.85 OVER last_1_day",
+    severity: "error",
+    notification_channels: ["email", "slack"],
+    cooldown_minutes: 240,
   },
   {
-    id: 'anomaly-detection-spike',
-    name: 'High Number of Data Anomalies',
-    condition: 'anomalies_detected > 50 OVER last_1_hour',
-    severity: 'warning',
-    notification_channels: ['slack'],
-    cooldown_minutes: 60
+    id: "anomaly-detection-spike",
+    name: "High Number of Data Anomalies",
+    condition: "anomalies_detected > 50 OVER last_1_hour",
+    severity: "warning",
+    notification_channels: ["slack"],
+    cooldown_minutes: 60,
   },
   {
-    id: 'cross-validation-failure',
-    name: 'External Database Validation Failure',
-    condition: 'ncbi_validation_rate < 0.70 OVER last_3_runs',
-    severity: 'critical',
-    notification_channels: ['email', 'slack', 'pagerduty'],
-    cooldown_minutes: 30
+    id: "cross-validation-failure",
+    name: "External Database Validation Failure",
+    condition: "ncbi_validation_rate < 0.70 OVER last_3_runs",
+    severity: "critical",
+    notification_channels: ["email", "slack", "pagerduty"],
+    cooldown_minutes: 30,
   },
   {
-    id: 'analytics-performance-degradation',
-    name: 'Analytics Query Performance Degradation',
-    condition: 'avg_query_time_ms > 5000 OVER last_10_runs',
-    severity: 'warning',
-    notification_channels: ['email'],
-    cooldown_minutes: 120
-  }
+    id: "analytics-performance-degradation",
+    name: "Analytics Query Performance Degradation",
+    condition: "avg_query_time_ms > 5000 OVER last_10_runs",
+    severity: "warning",
+    notification_channels: ["email"],
+    cooldown_minutes: 120,
+  },
 ];
 ```
 
 **Comprehensive Monitoring & Alerting:**
+
 - **SLA Tracking:** 99.9% uptime target, <5 minute recovery time
 - **Performance Benchmarking:** Baseline vs current performance comparisons
 - **Capacity Planning:** Resource usage trends and scaling recommendations
@@ -1031,6 +1122,7 @@ const alertRules: AlertRule[] = [
 ### API Development
 
 **Public API Endpoints:**
+
 ```typescript
 // GET /api/v1/organisms
 // GET /api/v1/organisms/{organism_id}
@@ -1043,6 +1135,7 @@ const alertRules: AlertRule[] = [
 ```
 
 **API Features:**
+
 - RESTful design with proper HTTP status codes
 - Rate limiting and authentication
 - OpenAPI/Swagger documentation
@@ -1053,6 +1146,7 @@ const alertRules: AlertRule[] = [
 ### Advanced Visualizations
 
 **Additional Chart Types:**
+
 - Phylogenetic trees with project metadata overlay
 - Network graphs showing sequencing center collaborations
 - Time-series analysis with seasonal decomposition
@@ -1063,6 +1157,7 @@ const alertRules: AlertRule[] = [
 ### Performance Optimization
 
 **Caching Strategy:**
+
 - CDN caching for static dashboard content
 - Smart cache invalidation on data updates
 - Precomputed aggregations for common analytical queries
@@ -1070,6 +1165,7 @@ const alertRules: AlertRule[] = [
 - Redis caching for frequently accessed analytics
 
 **Database Optimization:**
+
 - Partitioned tables by date/organism type for improved query performance
 - Optimized indexes for common analytical query patterns
 - Materialized views for complex aggregations and trend analysis
@@ -1107,30 +1203,35 @@ ENVIRONMENT = "production"
 
 ```typescript
 // src/lib/analytics-database.ts
-import Database from 'duckdb-wasm';
+import Database from "duckdb-wasm";
 
 export class GenomicsAnalyticsDB {
   private db: Database;
-  
+
   async initialize() {
     // Load from R2 cache or create new
     // Set up optimized schemas and indexes for analytics
     await this.createOptimizedTables();
     await this.createAnalyticalViews();
   }
-  
+
   async updateOrganisms(newOrganisms: OrganismRecord[]) {
     // Upsert new organism records with conflict resolution
     // Update materialized views for real-time analytics
     // Generate summary statistics and trend analysis
   }
-  
-  async executeAnalyticsQuery(queryType: string, parameters?: any): Promise<AnalyticsResult> {
+
+  async executeAnalyticsQuery(
+    queryType: string,
+    parameters?: any,
+  ): Promise<AnalyticsResult> {
     // Execute optimized analytical queries
     // Return structured analytics results with metadata
   }
-  
-  async generatePredictiveAnalytics(modelType: string): Promise<PredictionResult> {
+
+  async generatePredictiveAnalytics(
+    modelType: string,
+  ): Promise<PredictionResult> {
     // Run predictive models for forecasting
     // Calculate confidence intervals and uncertainty metrics
   }
@@ -1140,6 +1241,7 @@ export class GenomicsAnalyticsDB {
 ### Error Handling & Resilience
 
 **Worker Error Handling:**
+
 - Retry logic with exponential backoff for API failures
 - Graceful degradation for partial data scenarios
 - Comprehensive logging and monitoring with structured logs
@@ -1147,6 +1249,7 @@ export class GenomicsAnalyticsDB {
 - Circuit breaker patterns for external dependencies
 
 **Data Validation:**
+
 - Schema validation for incoming organism metadata
 - Data quality checks and automated alerts
 - Consistency verification across multiple data sources
@@ -1156,12 +1259,14 @@ export class GenomicsAnalyticsDB {
 ## Security & Compliance
 
 ### Data Protection
+
 - No sensitive personal data collected
 - Public genomic data only with proper attribution
 - Compliance with JGI data usage policies and terms
 - GDPR compliance for EU visitors (analytics opt-out)
 
 ### Infrastructure Security
+
 - Cloudflare security features enabled (DDoS protection, WAF)
 - API rate limiting and request validation
 - Secure credential management with environment variables
@@ -1171,6 +1276,7 @@ export class GenomicsAnalyticsDB {
 ## Deployment & Operations
 
 ### CI/CD Pipeline
+
 ```yaml
 # .github/workflows/deploy.yml
 name: Deploy Genomics Analytics Dashboard
@@ -1196,7 +1302,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy
-        
+
   deploy-site:
     needs: test
     runs-on: ubuntu-latest
@@ -1209,6 +1315,7 @@ jobs:
 ```
 
 ### Monitoring & Observability
+
 - Custom metrics for analytics pipeline performance
 - Error tracking and alerting with detailed context
 - Usage analytics for dashboard with privacy protection
@@ -1219,6 +1326,7 @@ jobs:
 ## Success Metrics
 
 ### Technical Metrics
+
 - **Uptime:** >99.9% availability for analytics pipeline
 - **Performance:** <2s page load times for dashboard
 - **Data Freshness:** <24h lag from JGI for new organism data
@@ -1226,6 +1334,7 @@ jobs:
 - **Query Performance:** <5s for complex analytical queries
 
 ### Business Metrics
+
 - **Data Coverage:** 95%+ of new JGI organisms captured and analyzed
 - **User Engagement:** Average session duration and page views
 - **API Usage:** Requests per day and user adoption
@@ -1235,6 +1344,7 @@ jobs:
 ## Future Enhancements
 
 ### Potential Extensions
+
 - Integration with additional databases (NCBI, ENA, DDBJ)
 - Machine learning for genome quality prediction and anomaly detection
 - Collaborative features for researchers (annotations, comments)
@@ -1245,6 +1355,7 @@ jobs:
 - Advanced natural language querying with LLM integration
 
 ### Scalability Considerations
+
 - Multi-region deployment for global users
 - Microservices architecture for complex analytical features
 - Event-driven architecture for real-time updates and notifications
@@ -1257,12 +1368,14 @@ jobs:
 ## Getting Started
 
 ### Prerequisites
+
 - Cloudflare account with Workers and R2 access
 - JGI Data Portal API access (no authentication required for search)
 - Node.js 18+ development environment
 - GitHub repository for code management
 
 ### Initial Setup Steps
+
 1. Set up Cloudflare Workers and R2 bucket for analytics storage
 2. Configure JGI API integration for metadata extraction
 3. Initialize SvelteKit project structure with analytics components
@@ -1271,6 +1384,7 @@ jobs:
 6. Deploy static site to Cloudflare Pages
 
 ### Development Workflow
+
 1. **Daily:** Monitor analytics pipeline health and data quality
 2. **Weekly:** Review and update evidence dashboards with new insights
 3. **Monthly:** Optimize performance and add new analytical features

@@ -1,4 +1,4 @@
-# JGI Data Portal 
+# JGI Data Portal
 
 API tutorial: https://sites.google.com/lbl.gov/data-portal-help/home/tips_tutorials/api-tutorial
 

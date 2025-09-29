@@ -1,0 +1,51 @@
+name = "microbe-metrics-worker"
+main = "src/worker/index.ts"
+compatibility_date = "2023-11-01"
+
+[env.production]
+name = "microbe-metrics-worker"
+route = "genomes.kenflynn.dev/api/*"
+
+[env.staging]
+name = "microbe-metrics-worker-staging"
+route = "staging.genomes.kenflynn.dev/api/*"
+
+# R2 Bucket for genomics data storage
+[[r2_buckets]]
+binding = "GENOMICS_DATA"
+bucket_name = "genomics-analytics-data"
+preview_bucket_name = "genomics-analytics-data-dev"
+
+# KV for metadata caching
+[[kv_namespaces]]
+binding = "METADATA_CACHE"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# DurableObject for real-time analytics processing
+[durable_objects]
+bindings = [
+  { name = "ANALYTICS_PROCESSOR", class_name = "AnalyticsProcessor" }
+]
+
+# DurableObject migrations
+[[migrations]]
+tag = "v1"
+new_classes = [ "AnalyticsProcessor" ]
+
+# Analytics Engine for observability
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Assets directory for static files
+[assets]
+directory = ".svelte-kit/output/client"
+binding = "ASSETS"
+
+# Scheduled event for daily data extraction
+[triggers]
+crons = ["0 6 * * *"]  # Daily at 6 AM UTC
+
+[vars]
+ENVIRONMENT = "development"
+LOG_LEVEL = "info"
