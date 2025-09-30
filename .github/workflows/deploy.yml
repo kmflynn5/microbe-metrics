@@ -5,20 +5,11 @@ on:
     branches:
       - main
       - develop
-    paths:
-      - 'microbe-metrics/**'
-      - '.github/workflows/deploy.yml'
   pull_request:
     branches:
       - main
       - develop
-    paths:
-      - 'microbe-metrics/**'
   workflow_dispatch:
-
-defaults:
-  run:
-    working-directory: microbe-metrics
 
 jobs:
   test:
@@ -32,7 +23,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: microbe-metrics/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -66,7 +57,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: microbe-metrics/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -76,7 +67,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: microbe-metrics
           environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
           command: deploy
 
@@ -96,7 +86,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: microbe-metrics/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -111,7 +101,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: microbe-metrics
           command: pages deploy .svelte-kit/output/client --project-name=microbe-metrics --branch=${{ github.ref == 'refs/heads/main' && 'main' || 'develop' }}
 
   notification:
