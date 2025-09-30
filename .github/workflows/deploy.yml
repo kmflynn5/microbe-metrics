@@ -1,0 +1,132 @@
+name: Deploy Microbe Metrics
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'microbe-metrics/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'microbe-metrics/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: microbe-metrics
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: microbe-metrics/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:unit
+
+      - name: Build project
+        run: npm run build
+
+  deploy-worker:
+    name: Deploy Worker
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://genomes.kenflynn.dev' || 'https://staging.genomes.kenflynn.dev' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: microbe-metrics/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Worker to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: microbe-metrics
+          environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+          command: deploy
+
+  deploy-pages:
+    name: Deploy Pages
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: microbe-metrics/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SvelteKit site
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: microbe-metrics
+          command: pages deploy .svelte-kit/output/client --project-name=microbe-metrics --branch=${{ github.ref == 'refs/heads/main' && 'main' || 'develop' }}
+
+  notification:
+    name: Deployment Status
+    needs: [deploy-worker, deploy-pages]
+    runs-on: ubuntu-latest
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Check deployment status
+        run: |
+          if [ "${{ needs.deploy-worker.result }}" == "success" ] && [ "${{ needs.deploy-pages.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "Environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}"
+            echo "URL: ${{ github.ref == 'refs/heads/main' && 'https://genomes.kenflynn.dev' || 'https://staging.genomes.kenflynn.dev' }}"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi
