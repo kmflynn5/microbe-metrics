@@ -19,6 +19,7 @@ export default [
         ...globals.browser,
         ...globals.node,
         ...globals.es2022,
+        RequestInit: "readonly",
       },
     },
     plugins: {
@@ -65,6 +66,8 @@ export default [
     ignores: [
       "build/",
       ".svelte-kit/",
+      ".wrangler/",
+      ".wrangler-build/",
       "dist/",
       "node_modules/",
       "*.config.js",

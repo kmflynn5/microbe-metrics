@@ -7,7 +7,7 @@ import { MicrobeMetricsAPI, handleScheduled, type Env } from "./api";
 
 // Cloudflare Worker types
 interface ExecutionContext {
-  waitUntil(promise: Promise<any>): void;
+  waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
 }
 
@@ -20,7 +20,7 @@ export default {
   /**
    * Fetch handler - processes all HTTP requests
    */
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Handle API requests

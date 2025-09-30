@@ -93,13 +93,6 @@ export interface Env {
   LOG_LEVEL: string;
 }
 
-interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-  success: boolean;
-  timestamp: string;
-}
-
 export class MicrobeMetricsAPI {
   private env: Env;
   private jgiExtractor: JGIDataExtractor;

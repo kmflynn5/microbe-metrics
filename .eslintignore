@@ -1,0 +1,13 @@
+# Build outputs
+.svelte-kit/
+.wrangler/
+.wrangler-build/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Misc
+.DS_Store
+*.log

@@ -2,7 +2,7 @@
  * Svelte stores for analytics data management
  */
 
-import { writable, derived, get } from "svelte/store";
+import { writable, derived } from "svelte/store";
 import type {
   AnalyticsOverview,
   TrendData,
@@ -16,7 +16,7 @@ import { apiClient, isApiError } from "../api/client";
 
 // Loading state store
 export const createLoadingStore = () => {
-  const { subscribe, set, update } = writable<LoadingState>({
+  const { subscribe, update } = writable<LoadingState>({
     isLoading: false,
     error: undefined,
     lastUpdated: undefined,
@@ -192,7 +192,7 @@ function createRecentActivityStore() {
 
 // Projects Store
 function createProjectsStore() {
-  const { subscribe, set, update } = writable<GenomeProject[]>([]);
+  const { subscribe, set } = writable<GenomeProject[]>([]);
   const loading = createLoadingStore();
   const searchQuery = writable<string>("");
 
@@ -285,7 +285,7 @@ export const analytics = derived(
 // Global loading state
 export const isLoading = derived(
   [analyticsOverview, trends, pipelineHealth, recentActivity, projects],
-  (stores) => {
+  () => {
     // This would need to be implemented based on the actual loading state structure
     // For now, we'll return false
     return false;

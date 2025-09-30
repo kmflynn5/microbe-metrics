@@ -147,7 +147,7 @@ export class JGIDataExtractor {
   private extractOrganismName(filename: string, label?: string): string {
     // Extract organism name from filename patterns
     const cleanName = (label || filename)
-      .replace(/[_\.]/g, " ")
+      .replace(/[_.]/g, " ")
       .replace(/\d+/g, "")
       .replace(/\s+/g, " ")
       .trim();
