@@ -6,31 +6,31 @@ name = "microbe-metrics-worker"
 main = "src/worker/worker.ts"
 compatibility_date = "2023-11-01"
 
-# Production environment configuration
-[env.production]
-name = "microbe-metrics-worker"
-route = "genomes.kenflynn.dev/api/*"
-
-# Staging environment configuration
-[env.staging]
-name = "microbe-metrics-worker-staging"
-route = "staging.genomes.kenflynn.dev/api/*"
-
-# R2 Bucket for genomics data storage
-# Create these buckets in Cloudflare Dashboard > R2 > Create bucket
+# R2 Bucket for genomics data storage (shared across environments)
 [[r2_buckets]]
 binding = "GENOMICS_DATA"
 bucket_name = "genomics-analytics-data"
 preview_bucket_name = "genomics-analytics-data-dev"
 
-# KV Namespace for metadata caching
-# Create with: wrangler kv:namespace create "METADATA_CACHE"
-# Then: wrangler kv:namespace create "METADATA_CACHE" --preview
-# Replace the IDs below with the ones generated from those commands
+# KV Namespace for metadata caching (shared across environments)
 [[kv_namespaces]]
 binding = "METADATA_CACHE"
 id = "60fd5e7242d1450ea8117ed155f141bc"
 preview_id = "abb368c4b2504ffcb921804d27dbcfe3"
+
+# Production environment configuration
+[env.production]
+name = "microbe-metrics-worker"
+routes = [
+  { pattern = "genomes.kenflynn.dev/api/*", zone_name = "kenflynn.dev" }
+]
+
+# Staging environment configuration
+[env.staging]
+name = "microbe-metrics-worker-staging"
+routes = [
+  { pattern = "staging.genomes.kenflynn.dev/api/*", zone_name = "kenflynn.dev" }
+]
 
 # Durable Objects for real-time analytics processing (optional - disabled for initial deployment)
 # Uncomment when implementing stateful, real-time data processing
