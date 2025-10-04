@@ -105,7 +105,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy .svelte-kit/output/client --project-name=microbe-metrics --branch=${{ github.ref == 'refs/heads/main' && 'main' || 'develop' }}
+          command: pages deploy build --project-name=microbe-metrics --branch=${{ github.ref == 'refs/heads/main' && 'main' || 'develop' }}
 
   notification:
     name: Deployment Status
