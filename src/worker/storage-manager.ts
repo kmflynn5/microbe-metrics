@@ -2,8 +2,8 @@
  * R2 Storage Manager - Handles all R2 bucket operations and data organization
  */
 
-import { Env } from "./index";
-import { JGIGenomeProject } from "./jgi-extractor";
+import type { Env } from "./types";
+import type { JGIGenomeProject } from "./jgi-extractor";
 
 export interface AnalyticsData {
   overview: {
@@ -60,7 +60,6 @@ export class R2StorageManager {
           contentType: "application/json",
         },
       });
-
     } catch (error) {
       console.error("Failed to store raw data:", error);
       throw error;
@@ -96,7 +95,6 @@ export class R2StorageManager {
         JSON.stringify(analytics.overview),
         { expirationTtl: 3600 }, // 1 hour
       );
-
     } catch (error) {
       console.error("Failed to store analytics:", error);
       throw error;
@@ -113,7 +111,6 @@ export class R2StorageManager {
           httpMetadata: { contentType: "text/markdown" },
         });
       }
-
     } catch (error) {
       console.error("Failed to store evidence reports:", error);
       throw error;
@@ -123,7 +120,9 @@ export class R2StorageManager {
   async getAnalyticsOverview(): Promise<any> {
     try {
       // Try cache first
-      const cached = await this.env.METADATA_CACHE.get("analytics_overview");
+      const cached = (await this.env.METADATA_CACHE.get("analytics_overview", {
+        type: "text",
+      })) as string | null;
       if (cached) {
         return JSON.parse(cached);
       }
@@ -131,7 +130,7 @@ export class R2StorageManager {
       // Fallback to R2
       const object = await this.env.GENOMICS_DATA.get("analytics/current.json");
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as AnalyticsData;
         return data.overview;
       }
 
@@ -147,7 +146,7 @@ export class R2StorageManager {
     try {
       const object = await this.env.GENOMICS_DATA.get("analytics/current.json");
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as AnalyticsData;
         return data.trends;
       }
 
@@ -162,7 +161,7 @@ export class R2StorageManager {
     try {
       const object = await this.env.GENOMICS_DATA.get("analytics/current.json");
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as AnalyticsData;
         return data.pipelineHealth;
       }
 
@@ -177,7 +176,7 @@ export class R2StorageManager {
     try {
       const object = await this.env.GENOMICS_DATA.get("analytics/current.json");
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as AnalyticsData;
         return data.recentActivity;
       }
 
@@ -196,7 +195,7 @@ export class R2StorageManager {
       );
 
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as { projects: JGIGenomeProject[] };
         return data.projects;
       }
 
@@ -209,7 +208,9 @@ export class R2StorageManager {
         `raw/jgi-responses/${yesterdayKey}.json`,
       );
       if (yesterdayObject) {
-        const data = await yesterdayObject.json();
+        const data = (await yesterdayObject.json()) as {
+          projects: JGIGenomeProject[];
+        };
         return data.projects;
       }
 

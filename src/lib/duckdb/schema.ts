@@ -3,7 +3,7 @@
  */
 
 import * as duckdb from "@duckdb/duckdb-wasm";
-import { GenomeProject, QueryResult } from "../types/analytics";
+import type { GenomeProject, QueryResult } from "../types/analytics";
 
 export class DuckDBAnalytics {
   private db: duckdb.AsyncDuckDB | null = null;
@@ -187,7 +187,7 @@ export class DuckDBAnalytics {
       const batch = projects.slice(i, i + batchSize);
 
       for (const project of batch) {
-        await insertStatement.run([
+        await insertStatement.query(
           project.id,
           project.name,
           project.organism,
@@ -208,7 +208,7 @@ export class DuckDBAnalytics {
           project.urls.portal,
           project.urls.download || null,
           project.extractedAt,
-        ]);
+        );
       }
     }
 

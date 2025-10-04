@@ -2,8 +2,8 @@
  * Evidence Generator - Creates Evidence MD reports for automated dashboard documentation
  */
 
-import { Env } from "./index";
-import { AnalyticsData } from "./storage-manager";
+import type { Env } from "./types";
+import type { AnalyticsData } from "./storage-manager";
 
 export interface EvidenceReport {
   type: string;
@@ -20,7 +20,6 @@ export class EvidenceGenerator {
   }
 
   async generateReports(analytics: AnalyticsData): Promise<EvidenceReport[]> {
-
     const reports = [
       await this.generateOverviewReport(analytics),
       await this.generateTrendsReport(analytics),

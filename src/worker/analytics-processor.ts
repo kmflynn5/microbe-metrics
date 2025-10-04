@@ -2,9 +2,9 @@
  * Analytics Processor - Handles data analysis and metrics computation
  */
 
-import { Env } from "./index";
-import { JGIGenomeProject } from "./jgi-extractor";
-import { AnalyticsData } from "./storage-manager";
+import type { Env } from "./types";
+import type { JGIGenomeProject } from "./jgi-extractor";
+import type { AnalyticsData } from "./storage-manager";
 
 export class AnalyticsProcessor {
   private env: Env;
@@ -14,7 +14,6 @@ export class AnalyticsProcessor {
   }
 
   async processData(projects: JGIGenomeProject[]): Promise<AnalyticsData> {
-
     try {
       const overview = await this.computeOverview(projects);
       const trends = await this.computeTrends(projects);
@@ -138,7 +137,7 @@ export class AnalyticsProcessor {
       }
     });
 
-    const monthly = [];
+    const monthly: Array<{ month: string; count: number; domain: string }> = [];
     Array.from(trends.entries()).forEach(([month, counts]) => {
       monthly.push({
         month,
@@ -174,7 +173,7 @@ export class AnalyticsProcessor {
       }
     });
 
-    const yearly = [];
+    const yearly: Array<{ year: string; count: number; domain: string }> = [];
     Array.from(trends.entries()).forEach(([year, counts]) => {
       yearly.push({
         year,
@@ -193,7 +192,10 @@ export class AnalyticsProcessor {
   }
 
   private async computePipelineHealth() {
-    const lastExtraction = await this.env.METADATA_CACHE.get("last_extraction");
+    const lastExtraction = (await this.env.METADATA_CACHE.get(
+      "last_extraction",
+      { type: "text" },
+    )) as string | null;
     const extractionStats = await this.getExtractionStats();
 
     // Determine health status
@@ -225,10 +227,20 @@ export class AnalyticsProcessor {
 
   private async computeRecentActivity() {
     // Get recent activity from analytics data
-    const activities = [];
+    const activities: Array<{
+      id: string;
+      type: "extraction" | "processing" | "analysis";
+      status: "success" | "error" | "warning";
+      message: string;
+      timestamp: string;
+      metadata?: any;
+    }> = [];
 
     // Add extraction activity
-    const lastExtraction = await this.env.METADATA_CACHE.get("last_extraction");
+    const lastExtraction = (await this.env.METADATA_CACHE.get(
+      "last_extraction",
+      { type: "text" },
+    )) as string | null;
     if (lastExtraction) {
       activities.push({
         id: "extraction_" + Date.now(),
@@ -278,7 +290,7 @@ export class AnalyticsProcessor {
         `analytics/history/${dateKey}.json`,
       );
       if (object) {
-        const data = await object.json();
+        const data = (await object.json()) as AnalyticsData;
         return data.overview;
       }
 
@@ -292,7 +304,9 @@ export class AnalyticsProcessor {
   private async getExtractionStats() {
     // Get extraction statistics from KV or compute defaults
     try {
-      const stats = await this.env.METADATA_CACHE.get("extraction_stats");
+      const stats = (await this.env.METADATA_CACHE.get("extraction_stats", {
+        type: "text",
+      })) as string | null;
       if (stats) {
         return JSON.parse(stats);
       }
@@ -314,7 +328,10 @@ export class AnalyticsProcessor {
   }
 
   async getStatus() {
-    const lastExtraction = await this.env.METADATA_CACHE.get("last_extraction");
+    const lastExtraction = (await this.env.METADATA_CACHE.get(
+      "last_extraction",
+      { type: "text" },
+    )) as string | null;
     const stats = await this.getExtractionStats();
 
     return {

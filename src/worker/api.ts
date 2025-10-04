@@ -11,7 +11,11 @@ import { EvidenceGenerator } from "./evidence-generator";
 // Cloudflare Worker runtime types
 interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
-  put(key: string, value: ReadableStream | ArrayBuffer | string, options?: R2PutOptions): Promise<R2Object>;
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | string,
+    options?: R2PutOptions,
+  ): Promise<R2Object>;
   delete(key: string): Promise<void>;
   list(options?: R2ListOptions): Promise<R2Objects>;
 }
@@ -59,10 +63,25 @@ interface R2Objects {
 }
 
 interface KVNamespace {
-  get(key: string, options?: { type?: "text" | "json" | "arrayBuffer" | "stream" }): Promise<any>;
-  put(key: string, value: string | ArrayBuffer | ReadableStream, options?: { expirationTtl?: number; expiration?: number; metadata?: any }): Promise<void>;
+  get(
+    key: string,
+    options?: { type?: "text" | "json" | "arrayBuffer" | "stream" },
+  ): Promise<any>;
+  put(
+    key: string,
+    value: string | ArrayBuffer | ReadableStream,
+    options?: { expirationTtl?: number; expiration?: number; metadata?: any },
+  ): Promise<void>;
   delete(key: string): Promise<void>;
-  list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: { name: string; expiration?: number; metadata?: any }[]; list_complete: boolean; cursor?: string }>;
+  list(options?: {
+    prefix?: string;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{
+    keys: { name: string; expiration?: number; metadata?: any }[];
+    list_complete: boolean;
+    cursor?: string;
+  }>;
 }
 
 interface DurableObjectNamespace {
@@ -81,14 +100,18 @@ interface DurableObjectStub {
 }
 
 interface AnalyticsEngineDataset {
-  writeDataPoint(event?: { blobs?: string[]; doubles?: number[]; indexes?: string[] }): void;
+  writeDataPoint(event?: {
+    blobs?: string[];
+    doubles?: number[];
+    indexes?: string[];
+  }): void;
 }
 
 export interface Env {
   GENOMICS_DATA: R2Bucket;
   METADATA_CACHE: KVNamespace;
-  ANALYTICS_PROCESSOR?: DurableObjectNamespace;  // Optional - for future use
-  ANALYTICS?: AnalyticsEngineDataset;  // Optional - for future use
+  ANALYTICS_PROCESSOR?: DurableObjectNamespace; // Optional - for future use
+  ANALYTICS?: AnalyticsEngineDataset; // Optional - for future use
   ENVIRONMENT: string;
   LOG_LEVEL: string;
 }
@@ -130,20 +153,25 @@ export class MicrobeMetricsAPI {
       }
 
       return this.jsonResponse(
-        { error: "Not found", success: false, timestamp: new Date().toISOString() },
+        {
+          error: "Not found",
+          success: false,
+          timestamp: new Date().toISOString(),
+        },
         404,
-        corsHeaders
+        corsHeaders,
       );
     } catch (error) {
       console.error("API Error:", error);
       return this.jsonResponse(
         {
-          error: error instanceof Error ? error.message : "Internal server error",
+          error:
+            error instanceof Error ? error.message : "Internal server error",
           success: false,
           timestamp: new Date().toISOString(),
         },
         500,
-        corsHeaders
+        corsHeaders,
       );
     }
   }
@@ -195,8 +223,12 @@ export class MicrobeMetricsAPI {
     }
 
     return this.jsonResponse(
-      { error: "Endpoint not found", success: false, timestamp: new Date().toISOString() },
-      404
+      {
+        error: "Endpoint not found",
+        success: false,
+        timestamp: new Date().toISOString(),
+      },
+      404,
     );
   }
 
@@ -209,7 +241,11 @@ export class MicrobeMetricsAPI {
       environment: this.env.ENVIRONMENT || "development",
     };
 
-    return this.jsonResponse({ data: health, success: true, timestamp: health.timestamp });
+    return this.jsonResponse({
+      data: health,
+      success: true,
+      timestamp: health.timestamp,
+    });
   }
 
   // Analytics overview with key metrics
@@ -219,7 +255,11 @@ export class MicrobeMetricsAPI {
       const cached = await this.env.METADATA_CACHE.get("analytics_overview");
       if (cached) {
         const data = JSON.parse(cached);
-        return this.jsonResponse({ data, success: true, timestamp: new Date().toISOString() });
+        return this.jsonResponse({
+          data,
+          success: true,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       // Generate fresh overview (this would be populated by scheduled extraction)
@@ -233,11 +273,19 @@ export class MicrobeMetricsAPI {
       };
 
       // Cache for 1 hour
-      await this.env.METADATA_CACHE.put("analytics_overview", JSON.stringify(overview), {
-        expirationTtl: 3600,
-      });
+      await this.env.METADATA_CACHE.put(
+        "analytics_overview",
+        JSON.stringify(overview),
+        {
+          expirationTtl: 3600,
+        },
+      );
 
-      return this.jsonResponse({ data: overview, success: true, timestamp: new Date().toISOString() });
+      return this.jsonResponse({
+        data: overview,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       console.error("Error fetching analytics overview:", error);
       throw error;
@@ -249,7 +297,11 @@ export class MicrobeMetricsAPI {
     const cached = await this.env.METADATA_CACHE.get("analytics_trends");
     if (cached) {
       const data = JSON.parse(cached);
-      return this.jsonResponse({ data, success: true, timestamp: new Date().toISOString() });
+      return this.jsonResponse({
+        data,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const trends = {
@@ -258,7 +310,11 @@ export class MicrobeMetricsAPI {
       yearly: [],
     };
 
-    return this.jsonResponse({ data: trends, success: true, timestamp: new Date().toISOString() });
+    return this.jsonResponse({
+      data: trends,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Pipeline health status
@@ -274,7 +330,11 @@ export class MicrobeMetricsAPI {
       uptime: 99.9,
     };
 
-    return this.jsonResponse({ data: health, success: true, timestamp: new Date().toISOString() });
+    return this.jsonResponse({
+      data: health,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Recent activity log
@@ -282,17 +342,29 @@ export class MicrobeMetricsAPI {
     const cached = await this.env.METADATA_CACHE.get("recent_activity");
     if (cached) {
       const data = JSON.parse(cached);
-      return this.jsonResponse({ data, success: true, timestamp: new Date().toISOString() });
+      return this.jsonResponse({
+        data,
+        success: true,
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    const activities = [];
-    return this.jsonResponse({ data: activities, success: true, timestamp: new Date().toISOString() });
+    const activities: unknown[] = [];
+    return this.jsonResponse({
+      data: activities,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Latest metadata
   private async handleLatestMetadata(): Promise<Response> {
     const projects = await this.storageManager.getLatestMetadata();
-    return this.jsonResponse({ data: projects, success: true, timestamp: new Date().toISOString() });
+    return this.jsonResponse({
+      data: projects,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Search metadata
@@ -302,8 +374,12 @@ export class MicrobeMetricsAPI {
 
     if (!query) {
       return this.jsonResponse(
-        { error: "Query parameter 'q' is required", success: false, timestamp: new Date().toISOString() },
-        400
+        {
+          error: "Query parameter 'q' is required",
+          success: false,
+          timestamp: new Date().toISOString(),
+        },
+        400,
       );
     }
 
@@ -332,7 +408,11 @@ export class MicrobeMetricsAPI {
       status: "idle",
     };
 
-    return this.jsonResponse({ data: status, success: true, timestamp: new Date().toISOString() });
+    return this.jsonResponse({
+      data: status,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Trigger manual extraction
@@ -343,7 +423,10 @@ export class MicrobeMetricsAPI {
       await this.storageManager.storeRawData(projects);
 
       return this.jsonResponse({
-        data: { message: "Extraction triggered successfully", projectsExtracted: projects.length },
+        data: {
+          message: "Extraction triggered successfully",
+          projectsExtracted: projects.length,
+        },
         success: true,
         timestamp: new Date().toISOString(),
       });
@@ -356,7 +439,30 @@ export class MicrobeMetricsAPI {
   // Generate evidence report
   private async handleGenerateReport(): Promise<Response> {
     try {
-      const report = await this.evidenceGenerator.generateAnalyticsReport();
+      // Generate empty analytics data for now - will be populated after first extraction
+      const emptyAnalytics = {
+        overview: {
+          totalProjects: 0,
+          archaeaProjects: 0,
+          bacteriaProjects: 0,
+          lastUpdated: new Date().toISOString(),
+          growthRate: 0,
+          newProjectsThisWeek: 0,
+        },
+        trends: { daily: [], monthly: [], yearly: [] },
+        pipelineHealth: {
+          status: "healthy" as const,
+          lastExtraction: new Date().toISOString(),
+          extractionCount: 0,
+          errorRate: 0,
+          avgProcessingTime: 0,
+          uptime: 100,
+        },
+        recentActivity: [],
+      };
+      const reports =
+        await this.evidenceGenerator.generateReports(emptyAnalytics);
+      const report = reports[0]?.content || "No report generated";
 
       return this.jsonResponse({
         data: { report, message: "Report generated successfully" },
@@ -383,7 +489,11 @@ export class MicrobeMetricsAPI {
   }
 
   // Utility: JSON response helper
-  private jsonResponse(data: any, status: number = 200, extraHeaders: Record<string, string> = {}): Response {
+  private jsonResponse(
+    data: any,
+    status: number = 200,
+    extraHeaders: Record<string, string> = {},
+  ): Response {
     return new Response(JSON.stringify(data), {
       status,
       headers: {
@@ -394,7 +504,10 @@ export class MicrobeMetricsAPI {
   }
 
   // Utility: Add CORS headers to response
-  private addCorsHeaders(response: Response, corsHeaders: Record<string, string>): Response {
+  private addCorsHeaders(
+    response: Response,
+    corsHeaders: Record<string, string>,
+  ): Response {
     const newResponse = new Response(response.body, response);
     Object.entries(corsHeaders).forEach(([key, value]) => {
       newResponse.headers.set(key, value);
@@ -421,13 +534,17 @@ export async function handleScheduled(env: Env): Promise<void> {
 
     // Generate analytics
     const analyticsProcessor = new AnalyticsProcessor(env);
-    const analytics = await analyticsProcessor.processAnalytics(projects);
+    const analytics = await analyticsProcessor.processData(projects);
     console.log("Analytics processed");
 
     // Cache analytics overview
-    await env.METADATA_CACHE.put("analytics_overview", JSON.stringify(analytics.overview), {
-      expirationTtl: 86400, // 24 hours
-    });
+    await env.METADATA_CACHE.put(
+      "analytics_overview",
+      JSON.stringify(analytics.overview),
+      {
+        expirationTtl: 86400, // 24 hours
+      },
+    );
 
     // Log activity
     const activity = {
@@ -440,9 +557,13 @@ export async function handleScheduled(env: Env): Promise<void> {
     };
 
     const recentActivity = [activity];
-    await env.METADATA_CACHE.put("recent_activity", JSON.stringify(recentActivity), {
-      expirationTtl: 86400,
-    });
+    await env.METADATA_CACHE.put(
+      "recent_activity",
+      JSON.stringify(recentActivity),
+      {
+        expirationTtl: 86400,
+      },
+    );
 
     console.log("Scheduled extraction completed successfully");
   } catch (error) {

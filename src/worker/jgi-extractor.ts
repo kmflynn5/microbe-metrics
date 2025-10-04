@@ -2,7 +2,7 @@
  * JGI Data Extractor - Handles communication with JGI Data Portal API
  */
 
-import { Env } from "./index";
+import type { Env } from "./types";
 
 export interface JGIGenomeProject {
   id: string;
@@ -40,7 +40,6 @@ export class JGIDataExtractor {
   }
 
   async extractLatestData(): Promise<JGIGenomeProject[]> {
-
     try {
       // Extract both archaea and bacteria genomes
       const [archaeaData, bacteriaData] = await Promise.all([
@@ -216,7 +215,9 @@ export class JGIDataExtractor {
   }
 
   async getLastExtractionTime(): Promise<string | null> {
-    return await this.env.METADATA_CACHE.get("last_extraction");
+    return (await this.env.METADATA_CACHE.get("last_extraction", {
+      type: "text",
+    })) as string | null;
   }
 
   async getExtractionStats(): Promise<{
@@ -240,7 +241,9 @@ export class JGIDataExtractor {
 
   private async getStoredOverview(): Promise<any> {
     try {
-      const cached = await this.env.METADATA_CACHE.get("analytics_overview");
+      const cached = (await this.env.METADATA_CACHE.get("analytics_overview", {
+        type: "text",
+      })) as string | null;
       return cached ? JSON.parse(cached) : null;
     } catch {
       return null;
