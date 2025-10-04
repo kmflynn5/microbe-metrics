@@ -74,6 +74,7 @@ nano .env
 ### Local Development
 
 **Option 1: Frontend Only (Mock Data)**
+
 ```sh
 # Start SvelteKit dev server with mock data
 npm run dev
@@ -83,6 +84,7 @@ open http://localhost:5173
 ```
 
 **Option 2: Full Stack (Worker + Frontend)**
+
 ```sh
 # Terminal 1: Start SvelteKit dev server
 npm run dev
@@ -199,12 +201,14 @@ wrangler --version
 ### Debugging
 
 **Frontend Debugging**:
+
 - Open browser DevTools (F12)
 - Check Console tab for errors
 - Use Network tab to inspect API calls
 - Svelte DevTools extension recommended
 
 **Worker Debugging**:
+
 ```sh
 # View real-time logs
 wrangler tail microbe-metrics-worker
@@ -217,11 +221,11 @@ wrangler tail microbe-metrics-worker --status error
 ```
 
 **Common Issues**:
+
 - Port 5173 in use: Kill process with `lsof -ti:5173 | xargs kill`
 - Build fails: Clear cache `rm -rf .svelte-kit node_modules/.cache`
 - Worker errors: Check `wrangler.toml` configuration
 - KV errors: Verify namespace IDs match created namespaces
-
 
 ## Data Pipeline
 
