@@ -3,28 +3,30 @@
 	import { analyticsOverview } from "../stores/analytics";
 	import type { AnalyticsOverview } from "../types/analytics";
 
-	let data: AnalyticsOverview | null = $state(null);
+	let data = $state<AnalyticsOverview | null>(null);
 	let loading = $state(true);
 	let error = $state<string | undefined>(undefined);
 
-	// Subscribe to store
-	$effect(() => {
-		const unsubscribe = analyticsOverview.subscribe((value) => {
+	onMount(() => {
+		// Subscribe to data store
+		const unsubData = analyticsOverview.subscribe((value) => {
 			data = value;
 		});
-		return unsubscribe;
-	});
 
-	$effect(() => {
-		const unsubscribe = analyticsOverview.loading((loadingState) => {
+		// Subscribe to loading store
+		const unsubLoading = analyticsOverview.loading((loadingState) => {
 			loading = loadingState.isLoading;
 			error = loadingState.error?.message;
 		});
-		return unsubscribe;
-	});
 
-	onMount(async () => {
-		await analyticsOverview.fetch();
+		// Fetch data (async but don't await in onMount)
+		analyticsOverview.fetch();
+
+		// Cleanup subscriptions on unmount
+		return () => {
+			unsubData();
+			unsubLoading();
+		};
 	});
 
 	function formatNumber(num: number): string {
