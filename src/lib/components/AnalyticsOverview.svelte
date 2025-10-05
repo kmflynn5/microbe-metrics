@@ -1,21 +1,12 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { analyticsOverview } from "../stores/analytics";
-	import type { LoadingState } from "../types/analytics";
-	import type { Readable } from "svelte/store";
 
-	const loadingStore: Readable<LoadingState> = {
-		subscribe: (run) => analyticsOverview.loading(run),
-	};
+	// Simple approach: just use the store values directly in the template
+	// Svelte will handle subscriptions automatically when using stores in markup
 
-	// Use $ prefix for auto-subscription
-	$: data = $analyticsOverview;
-	$: loadingState = $loadingStore;
-	$: loading = loadingState.isLoading;
-	$: error = loadingState.error?.message;
-
-	onMount(() => {
-		analyticsOverview.fetch();
+	onMount(async () => {
+		await analyticsOverview.fetch();
 	});
 
 	function formatNumber(num: number): string {
@@ -51,45 +42,24 @@
 	<div class="flex items-center justify-between mb-6">
 		<h2 class="text-xl font-semibold text-gray-900 dark:text-white">Analytics Overview</h2>
 		<div class="text-sm text-gray-500 dark:text-gray-400">
-			{#if data?.lastUpdated}
-				Last updated: {formatDate(data.lastUpdated)}
+			{#if $analyticsOverview?.lastUpdated}
+				Last updated: {formatDate($analyticsOverview.lastUpdated)}
 			{:else}
 				Loading...
 			{/if}
 		</div>
 	</div>
 
-	{#if error}
-		<div
-			class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
-		>
-			<div class="text-red-800 dark:text-red-200 text-sm">
-				<strong>Error loading analytics:</strong>
-				{error}
-			</div>
-		</div>
-	{/if}
-
-	{#if loading}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-			{#each Array(8) as _}
-				<div class="animate-pulse">
-					<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-					<div class="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-					<div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-				</div>
-			{/each}
-		</div>
-	{:else if data}
+	{#if $analyticsOverview}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 			<!-- Total Projects -->
 			<div class="analytics-card">
 				<div class="analytics-label">Total Projects</div>
 				<div class="analytics-metric text-blue-600 dark:text-blue-400">
-					{formatNumber(data.totalProjects)}
+					{formatNumber($analyticsOverview.totalProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
-					+{formatNumber(data.newProjectsThisWeek)} this week
+					+{formatNumber($analyticsOverview.newProjectsThisWeek)} this week
 				</div>
 			</div>
 
@@ -97,10 +67,12 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Bacteria</div>
 				<div class="analytics-metric text-blue-600 dark:text-blue-400">
-					{formatNumber(data.bacteriaProjects)}
+					{formatNumber($analyticsOverview.bacteriaProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
-					{formatPercentage((data.bacteriaProjects / data.totalProjects) * 100)} of total
+					{formatPercentage(
+						($analyticsOverview.bacteriaProjects / $analyticsOverview.totalProjects) * 100,
+					)} of total
 				</div>
 			</div>
 
@@ -108,10 +80,12 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Archaea</div>
 				<div class="analytics-metric text-red-600 dark:text-red-400">
-					{formatNumber(data.archaeaProjects)}
+					{formatNumber($analyticsOverview.archaeaProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
-					{formatPercentage((data.archaeaProjects / data.totalProjects) * 100)} of total
+					{formatPercentage(
+						($analyticsOverview.archaeaProjects / $analyticsOverview.totalProjects) * 100,
+					)} of total
 				</div>
 			</div>
 
@@ -119,11 +93,13 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Growth Rate</div>
 				<div
-					class="analytics-metric {data.growthRate > 0
+					class="analytics-metric {$analyticsOverview.growthRate > 0
 						? 'text-green-600 dark:text-green-400'
 						: 'text-red-600 dark:text-red-400'}"
 				>
-					{data.growthRate > 0 ? "+" : ""}{formatPercentage(data.growthRate)}
+					{$analyticsOverview.growthRate > 0 ? "+" : ""}{formatPercentage(
+						$analyticsOverview.growthRate,
+					)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Week-over-week change</div>
 			</div>
@@ -132,7 +108,7 @@
 			<div class="analytics-card">
 				<div class="analytics-label">New This Week</div>
 				<div class="analytics-metric text-green-600 dark:text-green-400">
-					{formatNumber(data.newProjectsThisWeek)}
+					{formatNumber($analyticsOverview.newProjectsThisWeek)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">New genome projects</div>
 			</div>
@@ -167,19 +143,27 @@
 					<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
 						<div
 							class="h-full bg-blue-500"
-							style="width: {(data.bacteriaProjects / data.totalProjects) * 100}%"
+							style="width: {($analyticsOverview.bacteriaProjects /
+								$analyticsOverview.totalProjects) *
+								100}%"
 						></div>
 						<div
 							class="h-full bg-red-500"
-							style="width: {(data.archaeaProjects / data.totalProjects) * 100}%"
+							style="width: {($analyticsOverview.archaeaProjects /
+								$analyticsOverview.totalProjects) *
+								100}%"
 						></div>
 					</div>
 					<div class="flex justify-between mt-2 text-sm">
 						<span class="text-blue-600 dark:text-blue-400">
-							Bacteria ({formatPercentage((data.bacteriaProjects / data.totalProjects) * 100)})
+							Bacteria ({formatPercentage(
+								($analyticsOverview.bacteriaProjects / $analyticsOverview.totalProjects) * 100,
+							)})
 						</span>
 						<span class="text-red-600 dark:text-red-400">
-							Archaea ({formatPercentage((data.archaeaProjects / data.totalProjects) * 100)})
+							Archaea ({formatPercentage(
+								($analyticsOverview.archaeaProjects / $analyticsOverview.totalProjects) * 100,
+							)})
 						</span>
 					</div>
 				</div>
