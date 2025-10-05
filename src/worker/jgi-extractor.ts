@@ -65,64 +65,88 @@ export class JGIDataExtractor {
 
 	private async extractGenomesForDomain(
 		domain: "archaea" | "bacteria",
+		maxPages: number = 10, // Limit to 10 pages to avoid timeouts
 	): Promise<JGIGenomeProject[]> {
-		const searchUrl = `${this.baseUrl}/search/?q=${domain}+genome&superseded=Current&dataset_type=Finished+Genome`;
+		const projects: JGIGenomeProject[] = [];
+		let currentPage = 0;
+		let hasMore = true;
+		const pageSize = 100; // Request 100 organisms per page
 
 		try {
-			console.log(`Fetching ${domain} genomes from: ${searchUrl}`);
-			const response = await fetch(searchUrl, {
-				headers: {
-					"User-Agent": "MicrobeMetrics/1.0 (genomes.kenflynn.dev)",
-					Accept: "application/json",
-				},
-			});
+			while (hasMore && currentPage < maxPages) {
+				const startIndex = currentPage * pageSize;
+				const searchUrl = `${this.baseUrl}/search/?q=${domain}+genome&superseded=Current&dataset_type=Finished+Genome&start=${startIndex}&rows=${pageSize}`;
 
-			console.log(`JGI API response status for ${domain}: ${response.status}`);
-
-			if (!response.ok) {
-				throw new Error(`JGI API error: ${response.status} ${response.statusText}`);
-			}
-
-			const data = await response.json();
-			console.log(`JGI API response data structure:`, {
-				hasResults: !!data.results,
-				isArray: Array.isArray(data.results),
-				resultCount: data.results?.length || 0,
-				keys: Object.keys(data),
-				hasOrganisms: !!data.organisms,
-				organismCount: data.organisms?.length || 0,
-				total: data.total || 0,
-				hits_total: data.hits_total || 0,
-			});
-
-			const projects: JGIGenomeProject[] = [];
-
-			// The JGI API returns organisms, not results
-			if (data.organisms && Array.isArray(data.organisms)) {
 				console.log(
-					`Processing ${data.organisms.length} organisms for ${domain} (limiting to 100)`,
+					`Fetching ${domain} genomes page ${currentPage + 1}/${maxPages} from: ${searchUrl}`,
 				);
-				for (const organism of data.organisms.slice(0, 100)) {
-					// Limit to first 100 results
-					try {
-						const project = await this.processOrganismResult(organism, domain);
-						if (project) {
-							projects.push(project);
-						}
-					} catch (error) {
-						console.warn("Failed to process organism result:", error);
-						// Continue with other results
-					}
+
+				const response = await fetch(searchUrl, {
+					headers: {
+						"User-Agent": "MicrobeMetrics/1.0 (genomes.kenflynn.dev)",
+						Accept: "application/json",
+					},
+				});
+
+				console.log(
+					`JGI API response status for ${domain} page ${currentPage + 1}: ${response.status}`,
+				);
+
+				if (!response.ok) {
+					throw new Error(`JGI API error: ${response.status} ${response.statusText}`);
 				}
-			} else {
-				console.warn(`No organisms array found in JGI response for ${domain}`);
+
+				const data = await response.json();
+
+				const totalAvailable = data.total || 0;
+				const organismCount = data.organisms?.length || 0;
+
+				console.log(`JGI API page ${currentPage + 1} response:`, {
+					organismCount,
+					totalAvailable,
+					hasOrganisms: !!data.organisms,
+					startIndex,
+					endIndex: startIndex + organismCount,
+				});
+
+				// The JGI API returns organisms, not results
+				if (data.organisms && Array.isArray(data.organisms)) {
+					for (const organism of data.organisms) {
+						try {
+							const project = await this.processOrganismResult(organism, domain);
+							if (project) {
+								projects.push(project);
+							}
+						} catch (error) {
+							console.warn("Failed to process organism result:", error);
+							// Continue with other results
+						}
+					}
+				} else {
+					console.warn(`No organisms array found in JGI response for ${domain}`);
+					hasMore = false;
+					break;
+				}
+
+				// Check if there are more pages
+				// Continue if we got results and haven't reached the total
+				const fetchedSoFar = startIndex + organismCount;
+				hasMore = organismCount > 0 && fetchedSoFar < totalAvailable;
+				currentPage++;
+
+				// Add small delay between requests to be respectful to JGI API
+				if (hasMore && currentPage < maxPages) {
+					await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+				}
 			}
 
-			console.log(`Successfully extracted ${projects.length} ${domain} genomes`);
+			console.log(
+				`Successfully extracted ${projects.length} ${domain} genomes across ${currentPage} pages`,
+			);
 			return projects;
 		} catch (error) {
 			console.error(`Failed to extract ${domain} genomes:`, error);
-			return [];
+			return projects; // Return what we got so far
 		}
 	}
 

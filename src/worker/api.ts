@@ -110,6 +110,7 @@ export class MicrobeMetricsAPI {
 	private env: Env;
 	private jgiExtractor: JGIDataExtractor;
 	private storageManager: R2StorageManager;
+	private analyticsProcessor: AnalyticsProcessor;
 	private evidenceGenerator: EvidenceGenerator;
 	private debug: DebugUtilities;
 
@@ -117,6 +118,7 @@ export class MicrobeMetricsAPI {
 		this.env = env;
 		this.jgiExtractor = new JGIDataExtractor(env);
 		this.storageManager = new R2StorageManager(env);
+		this.analyticsProcessor = new AnalyticsProcessor(env);
 		this.evidenceGenerator = new EvidenceGenerator(env);
 		this.debug = new DebugUtilities(env);
 	}
@@ -347,67 +349,118 @@ export class MicrobeMetricsAPI {
 
 	// Trends data for visualizations
 	private async handleTrends(): Promise<Response> {
-		const cached = await this.env.METADATA_CACHE.get("analytics_trends");
-		if (cached) {
-			const data = JSON.parse(cached);
+		try {
+			// Try to get from current analytics
+			const analyticsObject = await this.env.GENOMICS_DATA.get("analytics/current.json");
+			if (analyticsObject) {
+				const analytics = (await analyticsObject.json()) as any;
+				return this.jsonResponse({
+					data: analytics.trends || { daily: [], monthly: [], yearly: [] },
+					success: true,
+					timestamp: new Date().toISOString(),
+				});
+			}
+
+			// Fallback to empty trends if no analytics available
+			const trends = {
+				daily: [],
+				monthly: [],
+				yearly: [],
+			};
+
 			return this.jsonResponse({
-				data,
+				data: trends,
+				success: true,
+				timestamp: new Date().toISOString(),
+			});
+		} catch (error) {
+			console.error("Failed to fetch trends:", error);
+			return this.jsonResponse({
+				data: { daily: [], monthly: [], yearly: [] },
 				success: true,
 				timestamp: new Date().toISOString(),
 			});
 		}
-
-		const trends = {
-			daily: [],
-			monthly: [],
-			yearly: [],
-		};
-
-		return this.jsonResponse({
-			data: trends,
-			success: true,
-			timestamp: new Date().toISOString(),
-		});
 	}
 
 	// Pipeline health status
 	private async handlePipelineHealth(): Promise<Response> {
-		const stats = await this.jgiExtractor.getExtractionStats();
+		try {
+			// Try to get from current analytics
+			const analyticsObject = await this.env.GENOMICS_DATA.get("analytics/current.json");
+			if (analyticsObject) {
+				const analytics = (await analyticsObject.json()) as any;
+				if (analytics.pipelineHealth) {
+					return this.jsonResponse({
+						data: analytics.pipelineHealth,
+						success: true,
+						timestamp: new Date().toISOString(),
+					});
+				}
+			}
 
-		const health = {
-			status: "healthy" as const,
-			lastExtraction: stats.lastExtraction,
-			extractionCount: stats.totalProjects,
-			errorRate: 0,
-			avgProcessingTime: 0,
-			uptime: 99.9,
-		};
+			// Fallback to basic health data
+			const stats = await this.jgiExtractor.getExtractionStats();
 
-		return this.jsonResponse({
-			data: health,
-			success: true,
-			timestamp: new Date().toISOString(),
-		});
-	}
+			const health = {
+				status: "healthy" as const,
+				lastExtraction: stats.lastExtraction,
+				extractionCount: stats.totalProjects,
+				errorRate: 0,
+				avgProcessingTime: 0,
+				uptime: 99.9,
+			};
 
-	// Recent activity log
-	private async handleRecentActivity(): Promise<Response> {
-		const cached = await this.env.METADATA_CACHE.get("recent_activity");
-		if (cached) {
-			const data = JSON.parse(cached);
 			return this.jsonResponse({
-				data,
+				data: health,
+				success: true,
+				timestamp: new Date().toISOString(),
+			});
+		} catch (error) {
+			console.error("Failed to fetch pipeline health:", error);
+			return this.jsonResponse({
+				data: {
+					status: "error" as const,
+					lastExtraction: new Date().toISOString(),
+					extractionCount: 0,
+					errorRate: 0,
+					avgProcessingTime: 0,
+					uptime: 99.9,
+				},
 				success: true,
 				timestamp: new Date().toISOString(),
 			});
 		}
+	}
 
-		const activities: unknown[] = [];
-		return this.jsonResponse({
-			data: activities,
-			success: true,
-			timestamp: new Date().toISOString(),
-		});
+	// Recent activity log
+	private async handleRecentActivity(): Promise<Response> {
+		try {
+			// Try to get from current analytics
+			const analyticsObject = await this.env.GENOMICS_DATA.get("analytics/current.json");
+			if (analyticsObject) {
+				const analytics = (await analyticsObject.json()) as any;
+				return this.jsonResponse({
+					data: analytics.recentActivity || [],
+					success: true,
+					timestamp: new Date().toISOString(),
+				});
+			}
+
+			// Fallback to empty array if no analytics available
+			return this.jsonResponse({
+				data: [],
+				success: true,
+				timestamp: new Date().toISOString(),
+			});
+		} catch (error) {
+			console.error("Failed to fetch recent activity:", error);
+			return this.jsonResponse({
+				data: [],
+				success: true,
+				timestamp: new Date().toISOString(),
+			});
+		}
 	}
 
 	// Latest metadata
@@ -483,13 +536,27 @@ export class MicrobeMetricsAPI {
 		}
 
 		try {
+			// Step 1: Extract latest data from JGI
 			const projects = await this.jgiExtractor.extractLatestData();
+
+			// Step 2: Store raw data in R2
 			await this.storageManager.storeRawData(projects);
+
+			// Step 3: Process analytics
+			const analytics = await this.analyticsProcessor.processData(projects);
+
+			// Step 4: Store analytics in R2 and KV cache
+			await this.storageManager.storeAnalytics(analytics);
 
 			return this.jsonResponse({
 				data: {
 					message: "Extraction triggered successfully",
 					projectsExtracted: projects.length,
+					analytics: {
+						totalProjects: analytics.overview.totalProjects,
+						archaeaProjects: analytics.overview.archaeaProjects,
+						bacteriaProjects: analytics.overview.bacteriaProjects,
+					},
 				},
 				success: true,
 				timestamp: new Date().toISOString(),

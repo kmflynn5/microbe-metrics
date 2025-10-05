@@ -2,6 +2,24 @@
 	import AnalyticsOverview from "$lib/components/AnalyticsOverview.svelte";
 	import PipelineHealth from "$lib/components/PipelineHealth.svelte";
 	import RecentActivity from "$lib/components/RecentActivity.svelte";
+	import DomainChart from "$lib/components/visualizations/DomainChart.svelte";
+	import { analyticsOverview } from "$lib/stores/analytics";
+	import { onMount } from "svelte";
+	import type { AnalyticsOverview as AnalyticsOverviewType } from "$lib/types/analytics";
+
+	let data: AnalyticsOverviewType | null = $state(null);
+
+	// Subscribe to overview data for visualization
+	$effect(() => {
+		const unsubscribe = analyticsOverview.subscribe((value) => {
+			data = value;
+		});
+		return unsubscribe;
+	});
+
+	onMount(async () => {
+		await analyticsOverview.fetch();
+	});
 </script>
 
 <svelte:head>
@@ -28,6 +46,27 @@
 	<div class="mb-8">
 		<AnalyticsOverview />
 	</div>
+
+	<!-- Domain Distribution Visualization -->
+	{#if data && (data.archaeaProjects > 0 || data.bacteriaProjects > 0)}
+		<div class="mb-8">
+			<div
+				class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+			>
+				<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+					Domain Distribution
+				</h2>
+				<div class="flex justify-center">
+					<DomainChart
+						archaeaCount={data.archaeaProjects}
+						bacteriaCount={data.bacteriaProjects}
+						width={500}
+						height={500}
+					/>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Pipeline Health and Recent Activity -->
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
