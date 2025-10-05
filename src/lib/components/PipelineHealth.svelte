@@ -77,10 +77,10 @@
 >
 	<div class="flex items-center justify-between mb-6">
 		<h2 class="text-xl font-semibold text-gray-900 dark:text-white">Pipeline Health</h2>
-		{#if $pipelineHealth}
+		{#if $pipelineHealth?.data}
 			<div class="flex items-center space-x-2">
 				<svg
-					class="w-5 h-5 {getStatusColor($pipelineHealth.status)}"
+					class="w-5 h-5 {getStatusColor($pipelineHealth.data.status)}"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke-width="1.5"
@@ -89,23 +89,23 @@
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						d={getStatusIcon($pipelineHealth.status)}
+						d={getStatusIcon($pipelineHealth.data.status)}
 					/>
 				</svg>
-				<span class="text-sm font-medium {getStatusColor($pipelineHealth.status)} capitalize">
-					{$pipelineHealth.status}
+				<span class="text-sm font-medium {getStatusColor($pipelineHealth.data.status)} capitalize">
+					{$pipelineHealth.data.status}
 				</span>
 			</div>
 		{/if}
 	</div>
 
-	{#if $pipelineHealth}
+	{#if $pipelineHealth?.data}
 		<!-- Pipeline Status Summary -->
 		<div class="grid grid-cols-2 gap-4 mb-6">
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Last Run</div>
 				<div class="text-lg font-semibold text-gray-900 dark:text-white">
-					{formatDate($pipelineHealth.lastExtraction)}
+					{formatDate($pipelineHealth.data.lastExtraction)}
 				</div>
 			</div>
 			<div>
@@ -117,13 +117,13 @@
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
 				<div class="text-lg font-semibold quality-high">
-					{((1 - $pipelineHealth.errorRate) * 100).toFixed(1)}%
+					{((1 - $pipelineHealth.data.errorRate) * 100).toFixed(1)}%
 				</div>
 			</div>
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Avg Duration</div>
 				<div class="text-lg font-semibold text-gray-900 dark:text-white">
-					{(($pipelineHealth.avgProcessingTime ?? 0) / 1000).toFixed(1)}s
+					{(($pipelineHealth.data.avgProcessingTime ?? 0) / 1000).toFixed(1)}s
 				</div>
 			</div>
 		</div>
@@ -135,12 +135,12 @@
 				<div class="flex items-center space-x-4 text-sm">
 					<div class="flex items-center space-x-1">
 						<span class="text-gray-600 dark:text-gray-400">
-							Extractions: {$pipelineHealth.extractionCount}
+							Extractions: {$pipelineHealth.data.extractionCount}
 						</span>
 					</div>
 					<div class="flex items-center space-x-1">
 						<span class="text-gray-600 dark:text-gray-400">
-							Uptime: {($pipelineHealth.uptime ?? 0).toFixed(1)}%
+							Uptime: {($pipelineHealth.data.uptime ?? 0).toFixed(1)}%
 						</span>
 					</div>
 				</div>

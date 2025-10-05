@@ -11,6 +11,8 @@ import type {
 	GenomeProject,
 	LoadingState,
 	ApiError,
+	ApiResponse,
+	SearchResult,
 } from "../types/analytics";
 import { apiClient, isApiError } from "../api/client";
 
@@ -39,7 +41,7 @@ export const createLoadingStore = () => {
 
 // Analytics Overview Store
 function createAnalyticsOverviewStore() {
-	const { subscribe, set } = writable<AnalyticsOverview | null>(null);
+	const { subscribe, set } = writable<ApiResponse<AnalyticsOverview> | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -50,6 +52,8 @@ function createAnalyticsOverviewStore() {
 
 			try {
 				const response = await apiClient.getAnalyticsOverview();
+				console.log("[Store] API response:", response);
+				console.log("[Store] response.data:", response.data);
 
 				if (isApiError(response)) {
 					loading.setError({
@@ -60,7 +64,8 @@ function createAnalyticsOverviewStore() {
 					return;
 				}
 
-				set(response.data);
+				console.log("[Store] Setting store to:", response);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -76,7 +81,7 @@ function createAnalyticsOverviewStore() {
 
 // Trends Store
 function createTrendsStore() {
-	const { subscribe, set } = writable<TrendData | null>(null);
+	const { subscribe, set } = writable<ApiResponse<TrendData> | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -97,7 +102,7 @@ function createTrendsStore() {
 					return;
 				}
 
-				set(response.data);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -113,7 +118,7 @@ function createTrendsStore() {
 
 // Pipeline Health Store
 function createPipelineHealthStore() {
-	const { subscribe, set } = writable<PipelineHealth | null>(null);
+	const { subscribe, set } = writable<ApiResponse<PipelineHealth> | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -134,7 +139,7 @@ function createPipelineHealthStore() {
 					return;
 				}
 
-				set(response.data);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -150,7 +155,7 @@ function createPipelineHealthStore() {
 
 // Recent Activity Store
 function createRecentActivityStore() {
-	const { subscribe, set } = writable<ActivityItem[]>([]);
+	const { subscribe, set } = writable<ApiResponse<ActivityItem[]> | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -171,7 +176,7 @@ function createRecentActivityStore() {
 					return;
 				}
 
-				set(response.data);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -187,7 +192,7 @@ function createRecentActivityStore() {
 
 // Projects Store
 function createProjectsStore() {
-	const { subscribe, set } = writable<GenomeProject[]>([]);
+	const { subscribe, set } = writable<ApiResponse<GenomeProject[] | SearchResult> | null>(null);
 	const loading = createLoadingStore();
 	const searchQuery = writable<string>("");
 
@@ -210,7 +215,7 @@ function createProjectsStore() {
 					return;
 				}
 
-				set(response.data);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -242,7 +247,7 @@ function createProjectsStore() {
 					return;
 				}
 
-				set(response.data.projects);
+				set(response);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
