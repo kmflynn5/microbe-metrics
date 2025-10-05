@@ -5,12 +5,19 @@
 	// DEBUG: Log what we're getting
 	$: if (typeof window !== "undefined") {
 		console.log("[AnalyticsOverview] Store value:", $analyticsOverview);
+		console.log("[AnalyticsOverview] Store value type:", typeof $analyticsOverview);
+		console.log("[AnalyticsOverview] Has .data property?", $analyticsOverview?.data);
+		if ($analyticsOverview?.data) {
+			console.log("[AnalyticsOverview] data.totalProjects:", $analyticsOverview.data.totalProjects);
+			console.log("[AnalyticsOverview] data object:", $analyticsOverview.data);
+		}
 	}
 
 	onMount(async () => {
 		console.log("[AnalyticsOverview] Fetching data...");
 		await analyticsOverview.fetch();
 		console.log("[AnalyticsOverview] After fetch, store value:", $analyticsOverview);
+		console.log("[AnalyticsOverview] After fetch, accessing data:", $analyticsOverview?.data);
 	});
 
 	function formatNumber(num: number): string {
