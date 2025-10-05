@@ -1,32 +1,21 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { analyticsOverview } from "../stores/analytics";
-	import type { AnalyticsOverview } from "../types/analytics";
+	import type { LoadingState } from "../types/analytics";
+	import type { Readable } from "svelte/store";
 
-	let data = $state<AnalyticsOverview | null>(null);
-	let loading = $state(true);
-	let error = $state<string | undefined>(undefined);
+	const loadingStore: Readable<LoadingState> = {
+		subscribe: (run) => analyticsOverview.loading(run),
+	};
+
+	// Use $ prefix for auto-subscription
+	$: data = $analyticsOverview;
+	$: loadingState = $loadingStore;
+	$: loading = loadingState.isLoading;
+	$: error = loadingState.error?.message;
 
 	onMount(() => {
-		// Subscribe to data store
-		const unsubData = analyticsOverview.subscribe((value) => {
-			data = value;
-		});
-
-		// Subscribe to loading store
-		const unsubLoading = analyticsOverview.loading((loadingState) => {
-			loading = loadingState.isLoading;
-			error = loadingState.error?.message;
-		});
-
-		// Fetch data (async but don't await in onMount)
 		analyticsOverview.fetch();
-
-		// Cleanup subscriptions on unmount
-		return () => {
-			unsubData();
-			unsubLoading();
-		};
 	});
 
 	function formatNumber(num: number): string {
