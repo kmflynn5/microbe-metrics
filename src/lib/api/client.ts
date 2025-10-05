@@ -366,6 +366,6 @@ export class MockMicrobeMetricsAPI extends MicrobeMetricsAPI {
 	}
 }
 
-// Development flag - use mock API when worker is not available
-export const isDevelopment = import.meta.env.DEV;
-export const apiClient = isDevelopment ? new MockMicrobeMetricsAPI() : api;
+// Always use real API in production
+// In development, the worker runs at localhost:8787 alongside the frontend
+export const apiClient = api;
