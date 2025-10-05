@@ -33,6 +33,9 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<!-- Hero Section -->
 	<div class="mb-8">
+		<div class="bg-red-600 text-white p-4 rounded-lg mb-4 text-center font-bold text-xl">
+			🔴 DEPLOYMENT TEST - IF YOU SEE THIS, THE LATEST CODE IS LIVE 🔴
+		</div>
 		<h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
 			Genomics Analytics Dashboard
 		</h1>
