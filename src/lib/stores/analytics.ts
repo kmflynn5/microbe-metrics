@@ -11,8 +11,6 @@ import type {
 	GenomeProject,
 	LoadingState,
 	ApiError,
-	ApiResponse,
-	SearchResult,
 } from "../types/analytics";
 import { apiClient, isApiError } from "../api/client";
 
@@ -41,7 +39,7 @@ export const createLoadingStore = () => {
 
 // Analytics Overview Store
 function createAnalyticsOverviewStore() {
-	const { subscribe, set } = writable<ApiResponse<AnalyticsOverview> | null>(null);
+	const { subscribe, set } = writable<AnalyticsOverview | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -65,7 +63,7 @@ function createAnalyticsOverviewStore() {
 				}
 
 				console.log("[Store] Setting store to:", response);
-				set(response);
+				set(response.data);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -81,7 +79,7 @@ function createAnalyticsOverviewStore() {
 
 // Trends Store
 function createTrendsStore() {
-	const { subscribe, set } = writable<ApiResponse<TrendData> | null>(null);
+	const { subscribe, set } = writable<TrendData | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -102,7 +100,7 @@ function createTrendsStore() {
 					return;
 				}
 
-				set(response);
+				set(response.data);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -118,7 +116,7 @@ function createTrendsStore() {
 
 // Pipeline Health Store
 function createPipelineHealthStore() {
-	const { subscribe, set } = writable<ApiResponse<PipelineHealth> | null>(null);
+	const { subscribe, set } = writable<PipelineHealth | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -139,7 +137,7 @@ function createPipelineHealthStore() {
 					return;
 				}
 
-				set(response);
+				set(response.data);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -155,7 +153,7 @@ function createPipelineHealthStore() {
 
 // Recent Activity Store
 function createRecentActivityStore() {
-	const { subscribe, set } = writable<ApiResponse<ActivityItem[]> | null>(null);
+	const { subscribe, set } = writable<ActivityItem[] | null>(null);
 	const loading = createLoadingStore();
 
 	return {
@@ -176,7 +174,7 @@ function createRecentActivityStore() {
 					return;
 				}
 
-				set(response);
+				set(response.data);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -192,7 +190,7 @@ function createRecentActivityStore() {
 
 // Projects Store
 function createProjectsStore() {
-	const { subscribe, set } = writable<ApiResponse<GenomeProject[] | SearchResult> | null>(null);
+	const { subscribe, set } = writable<GenomeProject[] | null>(null);
 	const loading = createLoadingStore();
 	const searchQuery = writable<string>("");
 
@@ -215,7 +213,7 @@ function createProjectsStore() {
 					return;
 				}
 
-				set(response);
+				set(response.data);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({
@@ -247,7 +245,9 @@ function createProjectsStore() {
 					return;
 				}
 
-				set(response);
+				// SearchResult has {projects: [...], totalCount, query, searchTime}
+				// Unwrap to just the projects array
+				set(response.data.projects);
 				loading.setSuccess();
 			} catch (error) {
 				loading.setError({

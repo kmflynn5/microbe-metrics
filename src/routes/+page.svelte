@@ -5,12 +5,9 @@
 	import DomainChart from "$lib/components/visualizations/DomainChart.svelte";
 	import { analyticsOverview } from "$lib/stores/analytics";
 	import { onMount } from "svelte";
-	import type {
-		ApiResponse,
-		AnalyticsOverview as AnalyticsOverviewType,
-	} from "$lib/types/analytics";
+	import type { AnalyticsOverview as AnalyticsOverviewType } from "$lib/types/analytics";
 
-	let data: ApiResponse<AnalyticsOverviewType> | null = $state(null);
+	let data: AnalyticsOverviewType | null = $state(null);
 
 	// Subscribe to overview data for visualization
 	$effect(() => {
@@ -51,7 +48,7 @@
 	</div>
 
 	<!-- Domain Distribution Visualization -->
-	{#if data?.data && (data.data.archaeaProjects > 0 || data.data.bacteriaProjects > 0)}
+	{#if data && (data.archaeaProjects > 0 || data.bacteriaProjects > 0)}
 		<div class="mb-8">
 			<div
 				class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
@@ -61,8 +58,8 @@
 				</h2>
 				<div class="flex justify-center">
 					<DomainChart
-						archaeaCount={data.data.archaeaProjects}
-						bacteriaCount={data.data.bacteriaProjects}
+						archaeaCount={data.archaeaProjects}
+						bacteriaCount={data.bacteriaProjects}
 						width={500}
 						height={500}
 					/>

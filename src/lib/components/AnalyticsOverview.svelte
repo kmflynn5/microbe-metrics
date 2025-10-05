@@ -5,19 +5,12 @@
 	// DEBUG: Log what we're getting
 	$: if (typeof window !== "undefined") {
 		console.log("[AnalyticsOverview] Store value:", $analyticsOverview);
-		console.log("[AnalyticsOverview] Store value type:", typeof $analyticsOverview);
-		console.log("[AnalyticsOverview] Has .data property?", $analyticsOverview?.data);
-		if ($analyticsOverview?.data) {
-			console.log("[AnalyticsOverview] data.totalProjects:", $analyticsOverview.data.totalProjects);
-			console.log("[AnalyticsOverview] data object:", $analyticsOverview.data);
-		}
 	}
 
 	onMount(async () => {
 		console.log("[AnalyticsOverview] Fetching data...");
 		await analyticsOverview.fetch();
 		console.log("[AnalyticsOverview] After fetch, store value:", $analyticsOverview);
-		console.log("[AnalyticsOverview] After fetch, accessing data:", $analyticsOverview?.data);
 	});
 
 	function formatNumber(num: number): string {
@@ -53,24 +46,24 @@
 	<div class="flex items-center justify-between mb-6">
 		<h2 class="text-xl font-semibold text-gray-900 dark:text-white">Analytics Overview</h2>
 		<div class="text-sm text-gray-500 dark:text-gray-400">
-			{#if $analyticsOverview?.data?.lastUpdated}
-				Last updated: {formatDate($analyticsOverview.data.lastUpdated)}
+			{#if $analyticsOverview?.lastUpdated}
+				Last updated: {formatDate($analyticsOverview.lastUpdated)}
 			{:else}
 				Loading...
 			{/if}
 		</div>
 	</div>
 
-	{#if $analyticsOverview?.data}
+	{#if $analyticsOverview}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 			<!-- Total Projects -->
 			<div class="analytics-card">
 				<div class="analytics-label">Total Projects</div>
 				<div class="analytics-metric text-blue-600 dark:text-blue-400">
-					{formatNumber($analyticsOverview.data.totalProjects)}
+					{formatNumber($analyticsOverview.totalProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
-					+{formatNumber($analyticsOverview.data.newProjectsThisWeek)} this week
+					+{formatNumber($analyticsOverview.newProjectsThisWeek)} this week
 				</div>
 			</div>
 
@@ -78,12 +71,11 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Bacteria</div>
 				<div class="analytics-metric text-blue-600 dark:text-blue-400">
-					{formatNumber($analyticsOverview.data.bacteriaProjects)}
+					{formatNumber($analyticsOverview.bacteriaProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
 					{formatPercentage(
-						($analyticsOverview.data.bacteriaProjects / $analyticsOverview.data.totalProjects) *
-							100,
+						($analyticsOverview.bacteriaProjects / $analyticsOverview.totalProjects) * 100,
 					)} of total
 				</div>
 			</div>
@@ -92,11 +84,11 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Archaea</div>
 				<div class="analytics-metric text-red-600 dark:text-red-400">
-					{formatNumber($analyticsOverview.data.archaeaProjects)}
+					{formatNumber($analyticsOverview.archaeaProjects)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">
 					{formatPercentage(
-						($analyticsOverview.data.archaeaProjects / $analyticsOverview.data.totalProjects) * 100,
+						($analyticsOverview.archaeaProjects / $analyticsOverview.totalProjects) * 100,
 					)} of total
 				</div>
 			</div>
@@ -105,12 +97,12 @@
 			<div class="analytics-card">
 				<div class="analytics-label">Growth Rate</div>
 				<div
-					class="analytics-metric {$analyticsOverview.data.growthRate > 0
+					class="analytics-metric {$analyticsOverview.growthRate > 0
 						? 'text-green-600 dark:text-green-400'
 						: 'text-red-600 dark:text-red-400'}"
 				>
-					{$analyticsOverview.data.growthRate > 0 ? "+" : ""}{formatPercentage(
-						$analyticsOverview.data.growthRate,
+					{$analyticsOverview.growthRate > 0 ? "+" : ""}{formatPercentage(
+						$analyticsOverview.growthRate,
 					)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Week-over-week change</div>
@@ -120,7 +112,7 @@
 			<div class="analytics-card">
 				<div class="analytics-label">New This Week</div>
 				<div class="analytics-metric text-green-600 dark:text-green-400">
-					{formatNumber($analyticsOverview.data.newProjectsThisWeek)}
+					{formatNumber($analyticsOverview.newProjectsThisWeek)}
 				</div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">New genome projects</div>
 			</div>
@@ -155,28 +147,26 @@
 					<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
 						<div
 							class="h-full bg-blue-500"
-							style="width: {($analyticsOverview.data.bacteriaProjects /
-								$analyticsOverview.data.totalProjects) *
+							style="width: {($analyticsOverview.bacteriaProjects /
+								$analyticsOverview.totalProjects) *
 								100}%"
 						></div>
 						<div
 							class="h-full bg-red-500"
-							style="width: {($analyticsOverview.data.archaeaProjects /
-								$analyticsOverview.data.totalProjects) *
+							style="width: {($analyticsOverview.archaeaProjects /
+								$analyticsOverview.totalProjects) *
 								100}%"
 						></div>
 					</div>
 					<div class="flex justify-between mt-2 text-sm">
 						<span class="text-blue-600 dark:text-blue-400">
 							Bacteria ({formatPercentage(
-								($analyticsOverview.data.bacteriaProjects / $analyticsOverview.data.totalProjects) *
-									100,
+								($analyticsOverview.bacteriaProjects / $analyticsOverview.totalProjects) * 100,
 							)})
 						</span>
 						<span class="text-red-600 dark:text-red-400">
 							Archaea ({formatPercentage(
-								($analyticsOverview.data.archaeaProjects / $analyticsOverview.data.totalProjects) *
-									100,
+								($analyticsOverview.archaeaProjects / $analyticsOverview.totalProjects) * 100,
 							)})
 						</span>
 					</div>

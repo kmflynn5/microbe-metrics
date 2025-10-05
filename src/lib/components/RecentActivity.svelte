@@ -76,9 +76,9 @@
 		</button>
 	</div>
 
-	{#if $recentActivity?.data && $recentActivity.data.length > 0}
+	{#if $recentActivity && $recentActivity.length > 0}
 		<div class="space-y-4">
-			{#each $recentActivity.data as activity}
+			{#each $recentActivity as activity}
 				<div
 					class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
 				>
@@ -131,13 +131,13 @@
 			<div class="grid grid-cols-2 gap-4 text-center">
 				<div>
 					<div class="text-2xl font-bold text-gray-900 dark:text-white">
-						{$recentActivity.data.filter((a: any) => a.type === "extraction").length}
+						{$recentActivity.filter((a) => a.type === "extraction").length}
 					</div>
 					<div class="text-sm text-gray-600 dark:text-gray-400">Extractions</div>
 				</div>
 				<div>
 					<div class="text-2xl font-bold text-gray-900 dark:text-white">
-						{$recentActivity.data.filter((a: any) => a.type === "processing").length}
+						{$recentActivity.filter((a) => a.type === "processing").length}
 					</div>
 					<div class="text-sm text-gray-600 dark:text-gray-400">Processing</div>
 				</div>
