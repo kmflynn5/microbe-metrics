@@ -2,11 +2,15 @@
 	import { onMount } from "svelte";
 	import { analyticsOverview } from "../stores/analytics";
 
-	// Simple approach: just use the store values directly in the template
-	// Svelte will handle subscriptions automatically when using stores in markup
+	// DEBUG: Log what we're getting
+	$: if (typeof window !== "undefined") {
+		console.log("[AnalyticsOverview] Store value:", $analyticsOverview);
+	}
 
 	onMount(async () => {
+		console.log("[AnalyticsOverview] Fetching data...");
 		await analyticsOverview.fetch();
+		console.log("[AnalyticsOverview] After fetch, store value:", $analyticsOverview);
 	});
 
 	function formatNumber(num: number): string {
