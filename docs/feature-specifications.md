@@ -88,175 +88,175 @@ genomics-data/
 
 ```typescript
 interface OrganismRecord {
-  jgi_organism_id: string;
-  organism_name: string;
-  organism_type: "Bacteria" | "Archaea";
-  ncbi_taxon_id: string;
+	jgi_organism_id: string;
+	organism_name: string;
+	organism_type: "Bacteria" | "Archaea";
+	ncbi_taxon_id: string;
 
-  // Taxonomy
-  superkingdom: string;
-  phylum: string;
-  class: string;
-  order: string;
-  family: string;
-  genus: string;
-  species: string;
-  strain?: string;
+	// Taxonomy
+	superkingdom: string;
+	phylum: string;
+	class: string;
+	order: string;
+	family: string;
+	genus: string;
+	species: string;
+	strain?: string;
 
-  // Project Information
-  proposal_id: string;
-  project_name: string;
-  sequencing_center: string;
-  principal_investigator: string;
-  project_status: string;
+	// Project Information
+	proposal_id: string;
+	project_name: string;
+	sequencing_center: string;
+	principal_investigator: string;
+	project_status: string;
 
-  // Dates and Timeline
-  date_added: string;
-  date_modified: string;
-  project_start_date?: string;
-  project_completion_date?: string;
-  publication_date?: string;
+	// Dates and Timeline
+	date_added: string;
+	date_modified: string;
+	project_start_date?: string;
+	project_completion_date?: string;
+	publication_date?: string;
 
-  // Genome Characteristics
-  genome_size_bp?: number;
-  gene_count?: number;
-  assembly_method?: string;
-  sequencing_technology?: string;
-  assembly_quality?: string;
+	// Genome Characteristics
+	genome_size_bp?: number;
+	gene_count?: number;
+	assembly_method?: string;
+	sequencing_technology?: string;
+	assembly_quality?: string;
 
-  // Quality Metrics
-  checkm_completeness?: number;
-  checkm_contamination?: number;
-  n50_value?: number;
-  contig_count?: number;
+	// Quality Metrics
+	checkm_completeness?: number;
+	checkm_contamination?: number;
+	n50_value?: number;
+	contig_count?: number;
 
-  // Cross-references
-  genbank_accession?: string;
-  ncbi_bioproject?: string;
-  img_taxon_oid?: string;
-  gold_project_id?: string;
+	// Cross-references
+	genbank_accession?: string;
+	ncbi_bioproject?: string;
+	img_taxon_oid?: string;
+	gold_project_id?: string;
 
-  // File and Data Metadata
-  total_files: number;
-  file_types: string[];
-  data_size_gb?: number;
+	// File and Data Metadata
+	total_files: number;
+	file_types: string[];
+	data_size_gb?: number;
 
-  // Processing Metadata
-  extraction_date: string;
-  data_quality_score: number;
-  metadata_completeness: number;
+	// Processing Metadata
+	extraction_date: string;
+	data_quality_score: number;
+	metadata_completeness: number;
 }
 
 interface ProjectAnalytics {
-  date: string;
-  total_projects: number;
-  new_bacteria_projects: number;
-  new_archaea_projects: number;
-  completed_projects: number;
+	date: string;
+	total_projects: number;
+	new_bacteria_projects: number;
+	new_archaea_projects: number;
+	completed_projects: number;
 
-  // Sequencing Center Analytics
-  center_activity: Record<
-    string,
-    {
-      projects: number;
-      completion_rate: number;
-      avg_project_duration_days: number;
-    }
-  >;
+	// Sequencing Center Analytics
+	center_activity: Record<
+		string,
+		{
+			projects: number;
+			completion_rate: number;
+			avg_project_duration_days: number;
+		}
+	>;
 
-  // Taxonomic Diversity
-  taxonomic_diversity: {
-    new_phyla: number;
-    new_genera: number;
-    new_species: number;
-    total_phyla: number;
-    total_genera: number;
-    total_species: number;
-  };
+	// Taxonomic Diversity
+	taxonomic_diversity: {
+		new_phyla: number;
+		new_genera: number;
+		new_species: number;
+		total_phyla: number;
+		total_genera: number;
+		total_species: number;
+	};
 
-  // Quality Trends
-  quality_trends: {
-    avg_completeness: number;
-    avg_contamination: number;
-    high_quality_genomes: number; // >95% complete, <5% contamination
-    assembly_quality_distribution: Record<string, number>;
-  };
+	// Quality Trends
+	quality_trends: {
+		avg_completeness: number;
+		avg_contamination: number;
+		high_quality_genomes: number; // >95% complete, <5% contamination
+		assembly_quality_distribution: Record<string, number>;
+	};
 
-  // Project Timeline Analytics
-  timeline_metrics: {
-    avg_project_duration_days: number;
-    projects_in_progress: number;
-    completion_acceleration: number; // rate of change
-  };
+	// Project Timeline Analytics
+	timeline_metrics: {
+		avg_project_duration_days: number;
+		projects_in_progress: number;
+		completion_acceleration: number; // rate of change
+	};
 
-  // Technology and Methods
-  technology_adoption: {
-    sequencing_technologies: Record<string, number>;
-    assembly_methods: Record<string, number>;
-    trending_technologies: string[];
-  };
+	// Technology and Methods
+	technology_adoption: {
+		sequencing_technologies: Record<string, number>;
+		assembly_methods: Record<string, number>;
+		trending_technologies: string[];
+	};
 }
 
 interface PipelineRun {
-  run_id: string;
-  start_time: string;
-  end_time: string;
-  duration_ms: number;
-  status: "success" | "partial_success" | "failure";
-  organisms_processed: number;
-  organisms_added: number;
-  organisms_updated: number;
-  organisms_failed: number;
-  metadata_extracted_mb: number;
-  analytics_generated: number;
-  memory_peak_mb: number;
-  memory_avg_mb: number;
-  api_calls_made: number;
-  api_calls_failed: number;
-  api_rate_limit_hits: number;
-  duckdb_queries: number;
-  analytics_performance: {
-    trend_analysis_ms: number;
-    quality_assessment_ms: number;
-    anomaly_detection_ms: number;
-    cross_validation_ms: number;
-  };
-  data_quality_metrics: {
-    completeness_score: number;
-    consistency_score: number;
-    accuracy_score: number;
-    timeliness_score: number;
-  };
+	run_id: string;
+	start_time: string;
+	end_time: string;
+	duration_ms: number;
+	status: "success" | "partial_success" | "failure";
+	organisms_processed: number;
+	organisms_added: number;
+	organisms_updated: number;
+	organisms_failed: number;
+	metadata_extracted_mb: number;
+	analytics_generated: number;
+	memory_peak_mb: number;
+	memory_avg_mb: number;
+	api_calls_made: number;
+	api_calls_failed: number;
+	api_rate_limit_hits: number;
+	duckdb_queries: number;
+	analytics_performance: {
+		trend_analysis_ms: number;
+		quality_assessment_ms: number;
+		anomaly_detection_ms: number;
+		cross_validation_ms: number;
+	};
+	data_quality_metrics: {
+		completeness_score: number;
+		consistency_score: number;
+		accuracy_score: number;
+		timeliness_score: number;
+	};
 }
 
 interface DataQualityMetrics {
-  run_id: string;
-  timestamp: string;
-  total_records: number;
-  valid_records: number;
-  invalid_records: number;
-  duplicate_records: number;
-  missing_fields: Record<string, number>;
-  data_anomalies: Array<{
-    field: string;
-    anomaly_type: string;
-    count: number;
-    examples: string[];
-  }>;
-  schema_violations: Array<{
-    field: string;
-    expected_type: string;
-    actual_type: string;
-    count: number;
-  }>;
-  completeness_score: number; // 0-100
-  consistency_score: number; // 0-100
-  validity_score: number; // 0-100
-  cross_db_validation: {
-    ncbi_match_rate: number;
-    genbank_link_rate: number;
-    taxonomy_consistency: number;
-  };
+	run_id: string;
+	timestamp: string;
+	total_records: number;
+	valid_records: number;
+	invalid_records: number;
+	duplicate_records: number;
+	missing_fields: Record<string, number>;
+	data_anomalies: Array<{
+		field: string;
+		anomaly_type: string;
+		count: number;
+		examples: string[];
+	}>;
+	schema_violations: Array<{
+		field: string;
+		expected_type: string;
+		actual_type: string;
+		count: number;
+	}>;
+	completeness_score: number; // 0-100
+	consistency_score: number; // 0-100
+	validity_score: number; // 0-100
+	cross_db_validation: {
+		ncbi_match_rate: number;
+		genbank_link_rate: number;
+		taxonomy_consistency: number;
+	};
 }
 ```
 
@@ -269,191 +269,136 @@ interface DataQualityMetrics {
 import { AnalyticsMetrics } from "./analytics-metrics";
 
 export default {
-  async scheduled(event: ScheduledEvent, env: Env) {
-    const metrics = new AnalyticsMetrics(env);
-    const runId = crypto.randomUUID();
+	async scheduled(event: ScheduledEvent, env: Env) {
+		const metrics = new AnalyticsMetrics(env);
+		const runId = crypto.randomUUID();
 
-    await metrics.startRun(runId);
+		await metrics.startRun(runId);
 
-    try {
-      const results = await syncOrganismMetadata(env, metrics, runId);
-      await generateProjectAnalytics(env, metrics, runId);
-      await updateTrendAnalysis(env, metrics, runId);
-      await generateEvidenceReports(env, metrics, runId);
+		try {
+			const results = await syncOrganismMetadata(env, metrics, runId);
+			await generateProjectAnalytics(env, metrics, runId);
+			await updateTrendAnalysis(env, metrics, runId);
+			await generateEvidenceReports(env, metrics, runId);
 
-      await metrics.completeRun(runId, "success", results);
-    } catch (error) {
-      await metrics.completeRun(runId, "failure", { error: error.message });
-      throw error;
-    }
-  },
+			await metrics.completeRun(runId, "success", results);
+		} catch (error) {
+			await metrics.completeRun(runId, "failure", { error: error.message });
+			throw error;
+		}
+	},
 };
 
-async function syncOrganismMetadata(
-  env: Env,
-  metrics: AnalyticsMetrics,
-  runId: string,
-) {
-  const startTime = Date.now();
+async function syncOrganismMetadata(env: Env, metrics: AnalyticsMetrics, runId: string) {
+	const startTime = Date.now();
 
-  // Track memory and performance
-  const memoryStart = await metrics.getCurrentMemoryUsage();
+	// Track memory and performance
+	const memoryStart = await metrics.getCurrentMemoryUsage();
 
-  // Fetch organism metadata with detailed tracking
-  const jgiResponse = await fetch(buildJGISearchUrl("bacteria"), {
-    signal: AbortSignal.timeout(30000),
-  });
+	// Fetch organism metadata with detailed tracking
+	const jgiResponse = await fetch(buildJGISearchUrl("bacteria"), {
+		signal: AbortSignal.timeout(30000),
+	});
 
-  metrics.recordApiCall(
-    runId,
-    "jgi_bacteria_search",
-    jgiResponse.status,
-    Date.now() - startTime,
-  );
+	metrics.recordApiCall(runId, "jgi_bacteria_search", jgiResponse.status, Date.now() - startTime);
 
-  const responseSize = parseInt(
-    jgiResponse.headers.get("content-length") || "0",
-  );
-  metrics.recordDataTransfer(runId, responseSize, "api_response");
+	const responseSize = parseInt(jgiResponse.headers.get("content-length") || "0");
+	metrics.recordDataTransfer(runId, responseSize, "api_response");
 
-  const bacteriaData = await jgiResponse.json();
+	const bacteriaData = await jgiResponse.json();
 
-  // Process metadata with detailed performance tracking
-  const processingStart = Date.now();
-  const processedOrganisms = await processOrganismMetadata(
-    bacteriaData,
-    metrics,
-    runId,
-  );
-  metrics.recordProcessingTime(
-    runId,
-    "metadata_extraction",
-    Date.now() - processingStart,
-  );
+	// Process metadata with detailed performance tracking
+	const processingStart = Date.now();
+	const processedOrganisms = await processOrganismMetadata(bacteriaData, metrics, runId);
+	metrics.recordProcessingTime(runId, "metadata_extraction", Date.now() - processingStart);
 
-  // Data quality assessment
-  const qualityStart = Date.now();
-  const qualityMetrics = await assessDataQuality(
-    processedOrganisms,
-    metrics,
-    runId,
-  );
-  metrics.recordProcessingTime(
-    runId,
-    "quality_assessment",
-    Date.now() - qualityStart,
-  );
+	// Data quality assessment
+	const qualityStart = Date.now();
+	const qualityMetrics = await assessDataQuality(processedOrganisms, metrics, runId);
+	metrics.recordProcessingTime(runId, "quality_assessment", Date.now() - qualityStart);
 
-  // Store in R2 with tracking
-  const storageStart = Date.now();
-  await storeProcessedMetadata(processedOrganisms, env, metrics, runId);
-  metrics.recordProcessingTime(runId, "r2_storage", Date.now() - storageStart);
+	// Store in R2 with tracking
+	const storageStart = Date.now();
+	await storeProcessedMetadata(processedOrganisms, env, metrics, runId);
+	metrics.recordProcessingTime(runId, "r2_storage", Date.now() - storageStart);
 
-  // Update DuckDB analytics
-  const analyticsStart = Date.now();
-  await updateAnalyticsDatabase(processedOrganisms, env, metrics, runId);
-  metrics.recordProcessingTime(
-    runId,
-    "analytics_update",
-    Date.now() - analyticsStart,
-  );
+	// Update DuckDB analytics
+	const analyticsStart = Date.now();
+	await updateAnalyticsDatabase(processedOrganisms, env, metrics, runId);
+	metrics.recordProcessingTime(runId, "analytics_update", Date.now() - analyticsStart);
 
-  const memoryPeak = await metrics.getCurrentMemoryUsage();
-  metrics.recordMemoryUsage(runId, memoryStart, memoryPeak);
+	const memoryPeak = await metrics.getCurrentMemoryUsage();
+	metrics.recordMemoryUsage(runId, memoryStart, memoryPeak);
 
-  return {
-    organismsProcessed: processedOrganisms.length,
-    newOrganisms: processedOrganisms.filter((o) => o.is_new).length,
-    updatedOrganisms: processedOrganisms.filter((o) => o.is_updated).length,
-    qualityScore: qualityMetrics.overall_score,
-    dataSize: responseSize,
-  };
+	return {
+		organismsProcessed: processedOrganisms.length,
+		newOrganisms: processedOrganisms.filter((o) => o.is_new).length,
+		updatedOrganisms: processedOrganisms.filter((o) => o.is_updated).length,
+		qualityScore: qualityMetrics.overall_score,
+		dataSize: responseSize,
+	};
 }
 
-async function generateProjectAnalytics(
-  env: Env,
-  metrics: AnalyticsMetrics,
-  runId: string,
-) {
-  // Generate comprehensive project analytics
-  const analyticsQueries = [
-    "project_completion_trends",
-    "taxonomic_diversity_analysis",
-    "sequencing_center_performance",
-    "quality_metric_distributions",
-    "technology_adoption_patterns",
-  ];
+async function generateProjectAnalytics(env: Env, metrics: AnalyticsMetrics, runId: string) {
+	// Generate comprehensive project analytics
+	const analyticsQueries = [
+		"project_completion_trends",
+		"taxonomic_diversity_analysis",
+		"sequencing_center_performance",
+		"quality_metric_distributions",
+		"technology_adoption_patterns",
+	];
 
-  const analyticsResults = {};
+	const analyticsResults = {};
 
-  for (const queryType of analyticsQueries) {
-    const queryStart = Date.now();
+	for (const queryType of analyticsQueries) {
+		const queryStart = Date.now();
 
-    try {
-      const result = await executeDuckDBAnalytics(queryType, env);
-      analyticsResults[queryType] = result;
+		try {
+			const result = await executeDuckDBAnalytics(queryType, env);
+			analyticsResults[queryType] = result;
 
-      metrics.recordProcessingTime(
-        runId,
-        `analytics_${queryType}`,
-        Date.now() - queryStart,
-      );
-      metrics.recordAnalyticsMetric(
-        runId,
-        queryType,
-        "success",
-        result.row_count,
-      );
-    } catch (error) {
-      metrics.recordAnalyticsMetric(runId, queryType, "failed", 0);
-      console.error(`Analytics query ${queryType} failed:`, error);
-    }
-  }
+			metrics.recordProcessingTime(runId, `analytics_${queryType}`, Date.now() - queryStart);
+			metrics.recordAnalyticsMetric(runId, queryType, "success", result.row_count);
+		} catch (error) {
+			metrics.recordAnalyticsMetric(runId, queryType, "failed", 0);
+			console.error(`Analytics query ${queryType} failed:`, error);
+		}
+	}
 
-  return analyticsResults;
+	return analyticsResults;
 }
 
 class AnalyticsMetrics {
-  constructor(private env: Env) {}
+	constructor(private env: Env) {}
 
-  async recordDataQuality(
-    runId: string,
-    qualityMetrics: DataQualityAssessment,
-  ) {
-    // Track data quality metrics over time
-    const qualityRecord = {
-      run_id: runId,
-      timestamp: new Date().toISOString(),
-      completeness_score: qualityMetrics.completeness_score,
-      consistency_score: qualityMetrics.consistency_score,
-      accuracy_score: qualityMetrics.accuracy_score,
-      timeliness_score: qualityMetrics.timeliness_score,
-      overall_score: qualityMetrics.overall_score,
-      anomalies_detected: qualityMetrics.anomalies.length,
-      validation_errors: qualityMetrics.validation_errors.length,
-    };
+	async recordDataQuality(runId: string, qualityMetrics: DataQualityAssessment) {
+		// Track data quality metrics over time
+		const qualityRecord = {
+			run_id: runId,
+			timestamp: new Date().toISOString(),
+			completeness_score: qualityMetrics.completeness_score,
+			consistency_score: qualityMetrics.consistency_score,
+			accuracy_score: qualityMetrics.accuracy_score,
+			timeliness_score: qualityMetrics.timeliness_score,
+			overall_score: qualityMetrics.overall_score,
+			anomalies_detected: qualityMetrics.anomalies.length,
+			validation_errors: qualityMetrics.validation_errors.length,
+		};
 
-    await this.env.GENOMICS_DATA.put(
-      `metrics/quality/data-quality-${runId}.json`,
-      JSON.stringify(qualityRecord),
-    );
-  }
+		await this.env.GENOMICS_DATA.put(
+			`metrics/quality/data-quality-${runId}.json`,
+			JSON.stringify(qualityRecord),
+		);
+	}
 
-  async recordAnalyticsMetric(
-    runId: string,
-    queryType: string,
-    status: string,
-    rowCount: number,
-  ) {
-    // Track analytics performance and results
-  }
+	async recordAnalyticsMetric(runId: string, queryType: string, status: string, rowCount: number) {
+		// Track analytics performance and results
+	}
 
-  async recordDataDiscovery(
-    runId: string,
-    discoveryMetrics: DataDiscoveryMetrics,
-  ) {
-    // Track new data discoveries and patterns
-  }
+	async recordDataDiscovery(runId: string, discoveryMetrics: DataDiscoveryMetrics) {
+		// Track new data discoveries and patterns
+	}
 }
 ```
 
@@ -595,25 +540,24 @@ src/routes/
 ```typescript
 // src/routes/analytics/+page.js
 export async function load({ fetch }) {
-  // Load comprehensive analytics from DuckDB via API
-  // Parse trends and forecasting data
-  // Return dashboard analytics
+	// Load comprehensive analytics from DuckDB via API
+	// Parse trends and forecasting data
+	// Return dashboard analytics
 
-  const [projectTrends, qualityMetrics, taxonomyAnalytics, centerPerformance] =
-    await Promise.all([
-      fetch("/api/analytics/project-trends").then((r) => r.json()),
-      fetch("/api/analytics/quality-metrics").then((r) => r.json()),
-      fetch("/api/analytics/taxonomy-diversity").then((r) => r.json()),
-      fetch("/api/analytics/center-performance").then((r) => r.json()),
-    ]);
+	const [projectTrends, qualityMetrics, taxonomyAnalytics, centerPerformance] = await Promise.all([
+		fetch("/api/analytics/project-trends").then((r) => r.json()),
+		fetch("/api/analytics/quality-metrics").then((r) => r.json()),
+		fetch("/api/analytics/taxonomy-diversity").then((r) => r.json()),
+		fetch("/api/analytics/center-performance").then((r) => r.json()),
+	]);
 
-  return {
-    projectTrends,
-    qualityMetrics,
-    taxonomyAnalytics,
-    centerPerformance,
-    lastUpdated: new Date().toISOString(),
-  };
+	return {
+		projectTrends,
+		qualityMetrics,
+		taxonomyAnalytics,
+		centerPerformance,
+		lastUpdated: new Date().toISOString(),
+	};
 }
 ```
 
@@ -662,19 +606,19 @@ export async function load({ fetch }) {
 ```svelte
 <!-- src/lib/components/GenomicsAnalytics.svelte -->
 <script>
-  import * as d3 from 'd3';
-  import { onMount } from 'svelte';
+	import * as d3 from "d3";
+	import { onMount } from "svelte";
 
-  export let analyticsData;
-  export let width = 1200;
-  export let height = 600;
+	export let analyticsData;
+	export let width = 1200;
+	export let height = 600;
 
-  // Interactive analytics visualizations
-  // - Project completion velocity trends
-  // - Taxonomic diversity heatmaps
-  // - Quality distribution violin plots
-  // - Technology adoption timelines
-  // - Predictive completion forecasting
+	// Interactive analytics visualizations
+	// - Project completion velocity trends
+	// - Taxonomic diversity heatmaps
+	// - Quality distribution violin plots
+	// - Technology adoption timelines
+	// - Predictive completion forecasting
 </script>
 ```
 
@@ -693,30 +637,30 @@ export async function load({ fetch }) {
 
 ```typescript
 interface AdvancedAnalytics {
-  trend_analysis: {
-    discovery_velocity: TrendData[];
-    quality_improvement: TrendData[];
-    technology_adoption: TrendData[];
-    seasonal_patterns: SeasonalData[];
-  };
+	trend_analysis: {
+		discovery_velocity: TrendData[];
+		quality_improvement: TrendData[];
+		technology_adoption: TrendData[];
+		seasonal_patterns: SeasonalData[];
+	};
 
-  predictive_models: {
-    completion_forecasting: PredictionModel;
-    quality_prediction: QualityModel;
-    discovery_rate_model: DiscoveryModel;
-  };
+	predictive_models: {
+		completion_forecasting: PredictionModel;
+		quality_prediction: QualityModel;
+		discovery_rate_model: DiscoveryModel;
+	};
 
-  comparative_analysis: {
-    center_benchmarking: BenchmarkData[];
-    technology_comparison: ComparisonData[];
-    quality_correlations: CorrelationMatrix;
-  };
+	comparative_analysis: {
+		center_benchmarking: BenchmarkData[];
+		technology_comparison: ComparisonData[];
+		quality_correlations: CorrelationMatrix;
+	};
 
-  anomaly_detection: {
-    statistical_outliers: AnomalyData[];
-    pattern_deviations: PatternData[];
-    quality_anomalies: QualityAnomaly[];
-  };
+	anomaly_detection: {
+		statistical_outliers: AnomalyData[];
+		pattern_deviations: PatternData[];
+		quality_anomalies: QualityAnomaly[];
+	};
 }
 ```
 
@@ -1066,48 +1010,48 @@ ORDER BY validation_month DESC;
 
 ```typescript
 interface AlertRule {
-  id: string;
-  name: string;
-  condition: string; // SQL-like condition
-  severity: "warning" | "error" | "critical";
-  notification_channels: string[];
-  cooldown_minutes: number;
+	id: string;
+	name: string;
+	condition: string; // SQL-like condition
+	severity: "warning" | "error" | "critical";
+	notification_channels: string[];
+	cooldown_minutes: number;
 }
 
 // Example alert rules
 const alertRules: AlertRule[] = [
-  {
-    id: "data-quality-drop",
-    name: "Data Quality Score Drop",
-    condition: "avg_data_quality_score < 0.85 OVER last_1_day",
-    severity: "error",
-    notification_channels: ["email", "slack"],
-    cooldown_minutes: 240,
-  },
-  {
-    id: "anomaly-detection-spike",
-    name: "High Number of Data Anomalies",
-    condition: "anomalies_detected > 50 OVER last_1_hour",
-    severity: "warning",
-    notification_channels: ["slack"],
-    cooldown_minutes: 60,
-  },
-  {
-    id: "cross-validation-failure",
-    name: "External Database Validation Failure",
-    condition: "ncbi_validation_rate < 0.70 OVER last_3_runs",
-    severity: "critical",
-    notification_channels: ["email", "slack", "pagerduty"],
-    cooldown_minutes: 30,
-  },
-  {
-    id: "analytics-performance-degradation",
-    name: "Analytics Query Performance Degradation",
-    condition: "avg_query_time_ms > 5000 OVER last_10_runs",
-    severity: "warning",
-    notification_channels: ["email"],
-    cooldown_minutes: 120,
-  },
+	{
+		id: "data-quality-drop",
+		name: "Data Quality Score Drop",
+		condition: "avg_data_quality_score < 0.85 OVER last_1_day",
+		severity: "error",
+		notification_channels: ["email", "slack"],
+		cooldown_minutes: 240,
+	},
+	{
+		id: "anomaly-detection-spike",
+		name: "High Number of Data Anomalies",
+		condition: "anomalies_detected > 50 OVER last_1_hour",
+		severity: "warning",
+		notification_channels: ["slack"],
+		cooldown_minutes: 60,
+	},
+	{
+		id: "cross-validation-failure",
+		name: "External Database Validation Failure",
+		condition: "ncbi_validation_rate < 0.70 OVER last_3_runs",
+		severity: "critical",
+		notification_channels: ["email", "slack", "pagerduty"],
+		cooldown_minutes: 30,
+	},
+	{
+		id: "analytics-performance-degradation",
+		name: "Analytics Query Performance Degradation",
+		condition: "avg_query_time_ms > 5000 OVER last_10_runs",
+		severity: "warning",
+		notification_channels: ["email"],
+		cooldown_minutes: 120,
+	},
 ];
 ```
 
@@ -1206,35 +1150,30 @@ ENVIRONMENT = "production"
 import Database from "duckdb-wasm";
 
 export class GenomicsAnalyticsDB {
-  private db: Database;
+	private db: Database;
 
-  async initialize() {
-    // Load from R2 cache or create new
-    // Set up optimized schemas and indexes for analytics
-    await this.createOptimizedTables();
-    await this.createAnalyticalViews();
-  }
+	async initialize() {
+		// Load from R2 cache or create new
+		// Set up optimized schemas and indexes for analytics
+		await this.createOptimizedTables();
+		await this.createAnalyticalViews();
+	}
 
-  async updateOrganisms(newOrganisms: OrganismRecord[]) {
-    // Upsert new organism records with conflict resolution
-    // Update materialized views for real-time analytics
-    // Generate summary statistics and trend analysis
-  }
+	async updateOrganisms(newOrganisms: OrganismRecord[]) {
+		// Upsert new organism records with conflict resolution
+		// Update materialized views for real-time analytics
+		// Generate summary statistics and trend analysis
+	}
 
-  async executeAnalyticsQuery(
-    queryType: string,
-    parameters?: any,
-  ): Promise<AnalyticsResult> {
-    // Execute optimized analytical queries
-    // Return structured analytics results with metadata
-  }
+	async executeAnalyticsQuery(queryType: string, parameters?: any): Promise<AnalyticsResult> {
+		// Execute optimized analytical queries
+		// Return structured analytics results with metadata
+	}
 
-  async generatePredictiveAnalytics(
-    modelType: string,
-  ): Promise<PredictionResult> {
-    // Run predictive models for forecasting
-    // Calculate confidence intervals and uncertainty metrics
-  }
+	async generatePredictiveAnalytics(modelType: string): Promise<PredictionResult> {
+		// Run predictive models for forecasting
+		// Calculate confidence intervals and uncertainty metrics
+	}
 }
 ```
 

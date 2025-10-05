@@ -8,13 +8,19 @@
 	let error = $state<string | undefined>(undefined);
 
 	// Subscribe to store
-	pipelineHealth.subscribe((value) => {
-		data = value;
+	$effect(() => {
+		const unsubscribe = pipelineHealth.subscribe((value) => {
+			data = value;
+		});
+		return unsubscribe;
 	});
 
-	pipelineHealth.loading((loadingState) => {
-		loading = loadingState.isLoading;
-		error = loadingState.error?.message;
+	$effect(() => {
+		const unsubscribe = pipelineHealth.loading((loadingState) => {
+			loading = loadingState.isLoading;
+			error = loadingState.error?.message;
+		});
+		return unsubscribe;
 	});
 
 	onMount(async () => {
@@ -151,7 +157,7 @@
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Avg Duration</div>
 				<div class="text-lg font-semibold text-gray-900 dark:text-white">
-					{(data.avgProcessingTime / 1000).toFixed(1)}s
+					{((data.avgProcessingTime ?? 0) / 1000).toFixed(1)}s
 				</div>
 			</div>
 		</div>
@@ -168,7 +174,7 @@
 					</div>
 					<div class="flex items-center space-x-1">
 						<span class="text-gray-600 dark:text-gray-400">
-							Uptime: {data.uptime.toFixed(1)}%
+							Uptime: {(data.uptime ?? 0).toFixed(1)}%
 						</span>
 					</div>
 				</div>

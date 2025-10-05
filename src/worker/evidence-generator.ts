@@ -6,36 +6,34 @@ import type { Env } from "./types";
 import type { AnalyticsData } from "./storage-manager";
 
 export interface EvidenceReport {
-  type: string;
-  title: string;
-  content: string;
-  generatedAt: string;
+	type: string;
+	title: string;
+	content: string;
+	generatedAt: string;
 }
 
 export class EvidenceGenerator {
-  private env: Env;
+	private env: Env;
 
-  constructor(env: Env) {
-    this.env = env;
-  }
+	constructor(env: Env) {
+		this.env = env;
+	}
 
-  async generateReports(analytics: AnalyticsData): Promise<EvidenceReport[]> {
-    const reports = [
-      await this.generateOverviewReport(analytics),
-      await this.generateTrendsReport(analytics),
-      await this.generatePipelineReport(analytics),
-      await this.generateDomainAnalysisReport(analytics),
-    ];
+	async generateReports(analytics: AnalyticsData): Promise<EvidenceReport[]> {
+		const reports = [
+			await this.generateOverviewReport(analytics),
+			await this.generateTrendsReport(analytics),
+			await this.generatePipelineReport(analytics),
+			await this.generateDomainAnalysisReport(analytics),
+		];
 
-    return reports;
-  }
+		return reports;
+	}
 
-  private async generateOverviewReport(
-    analytics: AnalyticsData,
-  ): Promise<EvidenceReport> {
-    const { overview } = analytics;
+	private async generateOverviewReport(analytics: AnalyticsData): Promise<EvidenceReport> {
+		const { overview } = analytics;
 
-    const content = `---
+		const content = `---
 title: "Genomics Portfolio Overview"
 description: "Comprehensive analytics dashboard for JGI genome project monitoring"
 ---
@@ -101,21 +99,19 @@ This dashboard demonstrates:
 *Last updated: ${new Date().toISOString()}*
 `;
 
-    return {
-      type: "overview",
-      title: "Genomics Portfolio Overview",
-      content,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+		return {
+			type: "overview",
+			title: "Genomics Portfolio Overview",
+			content,
+			generatedAt: new Date().toISOString(),
+		};
+	}
 
-  private async generateTrendsReport(
-    analytics: AnalyticsData,
-  ): Promise<EvidenceReport> {
-    const { trends } = analytics;
-    const recentDaily = trends.daily.slice(-14); // Last 14 days
+	private async generateTrendsReport(analytics: AnalyticsData): Promise<EvidenceReport> {
+		const { trends } = analytics;
+		const recentDaily = trends.daily.slice(-14); // Last 14 days
 
-    const content = `---
+		const content = `---
 title: "Genomics Research Trends Analysis"
 description: "Temporal analysis of genome project submissions and research patterns"
 ---
@@ -126,23 +122,23 @@ description: "Temporal analysis of genome project submissions and research patte
 
 \`\`\`sql daily_trends
 ${recentDaily
-  .map(
-    (trend) =>
-      `select '${trend.date}' as date, '${trend.domain}' as domain, ${trend.count} as submissions`,
-  )
-  .join("\nunion all\n")}
+	.map(
+		(trend) =>
+			`select '${trend.date}' as date, '${trend.domain}' as domain, ${trend.count} as submissions`,
+	)
+	.join("\nunion all\n")}
 \`\`\`
 
 ## Monthly Submission Patterns
 
 \`\`\`sql monthly_patterns
 ${trends.monthly
-  .slice(-12)
-  .map(
-    (trend) =>
-      `select '${trend.month}' as month, '${trend.domain}' as domain, ${trend.count} as submissions`,
-  )
-  .join("\nunion all\n")}
+	.slice(-12)
+	.map(
+		(trend) =>
+			`select '${trend.month}' as month, '${trend.domain}' as domain, ${trend.count} as submissions`,
+	)
+	.join("\nunion all\n")}
 \`\`\`
 
 ## Key Insights
@@ -176,20 +172,18 @@ This trend analysis leverages:
 *Analysis generated: ${new Date().toISOString()}*
 `;
 
-    return {
-      type: "trends",
-      title: "Genomics Research Trends Analysis",
-      content,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+		return {
+			type: "trends",
+			title: "Genomics Research Trends Analysis",
+			content,
+			generatedAt: new Date().toISOString(),
+		};
+	}
 
-  private async generatePipelineReport(
-    analytics: AnalyticsData,
-  ): Promise<EvidenceReport> {
-    const { pipelineHealth } = analytics;
+	private async generatePipelineReport(analytics: AnalyticsData): Promise<EvidenceReport> {
+		const { pipelineHealth } = analytics;
 
-    const content = `---
+		const content = `---
 title: "Data Pipeline Health & Performance"
 description: "Real-time monitoring and performance analytics for genomics data infrastructure"
 ---
@@ -276,28 +270,24 @@ select
 *Health report generated: ${new Date().toISOString()}*
 `;
 
-    return {
-      type: "pipeline",
-      title: "Data Pipeline Health & Performance",
-      content,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+		return {
+			type: "pipeline",
+			title: "Data Pipeline Health & Performance",
+			content,
+			generatedAt: new Date().toISOString(),
+		};
+	}
 
-  private async generateDomainAnalysisReport(
-    analytics: AnalyticsData,
-  ): Promise<EvidenceReport> {
-    const { overview } = analytics;
-    const bacteriaPercentage = (
-      (overview.bacteriaProjects / overview.totalProjects) *
-      100
-    ).toFixed(1);
-    const archaeaPercentage = (
-      (overview.archaeaProjects / overview.totalProjects) *
-      100
-    ).toFixed(1);
+	private async generateDomainAnalysisReport(analytics: AnalyticsData): Promise<EvidenceReport> {
+		const { overview } = analytics;
+		const bacteriaPercentage = ((overview.bacteriaProjects / overview.totalProjects) * 100).toFixed(
+			1,
+		);
+		const archaeaPercentage = ((overview.archaeaProjects / overview.totalProjects) * 100).toFixed(
+			1,
+		);
 
-    const content = `---
+		const content = `---
 title: "Microbial Domain Analysis"
 description: "Comprehensive analysis of bacterial and archaeal genome project distributions"
 ---
@@ -384,11 +374,11 @@ select
 *Domain analysis generated: ${new Date().toISOString()}*
 `;
 
-    return {
-      type: "domain-analysis",
-      title: "Microbial Domain Analysis",
-      content,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+		return {
+			type: "domain-analysis",
+			title: "Microbial Domain Analysis",
+			content,
+			generatedAt: new Date().toISOString(),
+		};
+	}
 }

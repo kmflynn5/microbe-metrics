@@ -8,13 +8,19 @@
 	let error = $state<string | undefined>(undefined);
 
 	// Subscribe to store
-	recentActivity.subscribe((value) => {
-		activities = value || [];
+	$effect(() => {
+		const unsubscribe = recentActivity.subscribe((value) => {
+			activities = value || [];
+		});
+		return unsubscribe;
 	});
 
-	recentActivity.loading((loadingState) => {
-		loading = loadingState.isLoading;
-		error = loadingState.error?.message;
+	$effect(() => {
+		const unsubscribe = recentActivity.loading((loadingState) => {
+			loading = loadingState.isLoading;
+			error = loadingState.error?.message;
+		});
+		return unsubscribe;
 	});
 
 	onMount(async () => {

@@ -27,6 +27,24 @@ binding = "METADATA_CACHE"
 id = "60fd5e7242d1450ea8117ed155f141bc"
 preview_id = "abb368c4b2504ffcb921804d27dbcfe3"
 
+# Development environment configuration (for local wrangler dev)
+[env.development]
+name = "microbe-metrics-worker-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+LOG_LEVEL = "debug"
+
+[[env.development.r2_buckets]]
+binding = "GENOMICS_DATA"
+bucket_name = "genomics-analytics-data-dev"
+preview_bucket_name = "genomics-analytics-data-dev"
+
+[[env.development.kv_namespaces]]
+binding = "METADATA_CACHE"
+id = "abb368c4b2504ffcb921804d27dbcfe3"
+preview_id = "abb368c4b2504ffcb921804d27dbcfe3"
+
 # Staging environment configuration
 [env.staging]
 name = "microbe-metrics-worker-staging"
@@ -73,7 +91,7 @@ preview_id = "abb368c4b2504ffcb921804d27dbcfe3"
 
 # Scheduled event for daily data extraction from JGI
 # Cron format: minute hour day month day-of-week
-# Current: Daily at 6 AM UTC
+# Daily at 6 AM UTC (production schedule)
 [triggers]
 crons = ["0 6 * * *"]
 

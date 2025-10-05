@@ -8,13 +8,19 @@
 	let error = $state<string | undefined>(undefined);
 
 	// Subscribe to store
-	analyticsOverview.subscribe((value) => {
-		data = value;
+	$effect(() => {
+		const unsubscribe = analyticsOverview.subscribe((value) => {
+			data = value;
+		});
+		return unsubscribe;
 	});
 
-	analyticsOverview.loading((loadingState) => {
-		loading = loadingState.isLoading;
-		error = loadingState.error?.message;
+	$effect(() => {
+		const unsubscribe = analyticsOverview.loading((loadingState) => {
+			loading = loadingState.isLoading;
+			error = loadingState.error?.message;
+		});
+		return unsubscribe;
 	});
 
 	onMount(async () => {

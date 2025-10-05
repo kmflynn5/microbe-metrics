@@ -50,6 +50,23 @@ JGI Data Portal API → Cloudflare Worker → R2 Storage → DuckDB → Evidence
 
 ## Development
 
+### Quick Start
+
+```sh
+# Install dependencies
+npm install
+
+# Option 1: Frontend only (mock data)
+npm run dev              # → SvelteKit frontend at localhost:5173
+
+# Option 2: Full stack with local worker debugging (run both in separate terminals)
+# Terminal 1:
+npm run dev              # → SvelteKit frontend at localhost:5173
+
+# Terminal 2:
+npm run dev:worker       # → Cloudflare Worker API at localhost:8787
+```
+
 ### Prerequisites
 
 - Node.js 18+
@@ -63,10 +80,13 @@ JGI Data Portal API → Cloudflare Worker → R2 Storage → DuckDB → Evidence
 # 1. Install dependencies
 npm install
 
-# 2. Copy environment template
+# 2. Copy environment template (optional for local dev)
 cp .env.example .env
 
-# 3. Edit .env with your Cloudflare credentials
+# 3. Copy worker dev vars template (optional)
+cp .dev.vars.example .dev.vars
+
+# 4. Edit .env with your Cloudflare credentials (only needed for deployment)
 # See DEPLOYMENT-QUICKSTART.md for details on getting credentials
 nano .env
 ```
@@ -86,14 +106,15 @@ open http://localhost:5173
 **Option 2: Full Stack (Worker + Frontend)**
 
 ```sh
-# Terminal 1: Start SvelteKit dev server
+# Terminal 1: Start SvelteKit frontend
 npm run dev
 
-# Terminal 2: Start Cloudflare Worker locally
-wrangler dev
+# Terminal 2: Start Cloudflare Worker with debug endpoints
+npm run dev:worker
 
-# Frontend: http://localhost:5173
-# Worker API: http://localhost:8787
+# Frontend UI:  http://localhost:5173
+# Worker API:   http://localhost:8787
+# Debug endpoints available at /api/debug/*
 ```
 
 ### Testing
@@ -155,6 +176,72 @@ npm run deploy:staging
 
 ### Worker Development
 
+#### Local Worker Development (Recommended)
+
+Start the worker locally with full R2/KV bindings for easy debugging:
+
+```sh
+# Start worker with development environment and bindings
+npm run dev:worker
+
+# Worker runs at: http://localhost:8787
+# Has full access to R2 and KV (uses dev/staging buckets)
+# No authentication required for debug endpoints
+```
+
+**Available npm scripts:**
+
+- `npm run dev:worker` - Local worker with dev bindings (recommended)
+- `npm run dev:worker:remote` - Remote worker on Cloudflare network
+- `npm run dev:worker:local` - Fully local worker (no remote bindings)
+
+#### Debug Endpoints (Development Only)
+
+When running `npm run dev:worker`, these debug endpoints are available:
+
+```sh
+# Environment info
+curl http://localhost:8787/api/debug/info | jq
+
+# List all KV keys
+curl http://localhost:8787/api/debug/kv | jq
+
+# Get specific KV value
+curl 'http://localhost:8787/api/debug/kv/get?key=analytics_overview' | jq
+
+# List R2 bucket contents
+curl http://localhost:8787/api/debug/r2 | jq
+
+# List R2 with prefix filter
+curl 'http://localhost:8787/api/debug/r2?prefix=raw' | jq
+
+# Get specific R2 object
+curl 'http://localhost:8787/api/debug/r2/get?key=raw/jgi-responses/2025-10-05.json' | jq
+
+# Trigger manual data extraction (no auth needed in dev)
+curl -X POST http://localhost:8787/api/debug/trigger | jq
+```
+
+**Note:** Debug endpoints are automatically disabled in production (return 403).
+
+#### Production API Endpoints
+
+```sh
+# Health check
+curl http://localhost:8787/api/health
+
+# Analytics overview
+curl http://localhost:8787/api/analytics/overview
+
+# Pipeline health metrics
+curl http://localhost:8787/api/analytics/pipeline-health
+
+# Recent activity feed
+curl http://localhost:8787/api/analytics/recent-activity
+```
+
+#### Worker Deployment
+
 ```sh
 # Deploy worker to production
 wrangler deploy
@@ -171,10 +258,6 @@ wrangler kv:namespace create "METADATA_CACHE" --preview
 
 # List R2 buckets
 wrangler r2 bucket list
-
-# Test worker locally with requests
-curl http://localhost:8787/api/health
-curl http://localhost:8787/api/analytics/overview
 ```
 
 ### Useful Commands
@@ -200,17 +283,49 @@ wrangler --version
 
 ### Debugging
 
-**Frontend Debugging**:
+#### Frontend Debugging
 
 - Open browser DevTools (F12)
 - Check Console tab for errors
 - Use Network tab to inspect API calls
 - Svelte DevTools extension recommended
 
-**Worker Debugging**:
+#### Worker Debugging (Local Development)
+
+The easiest way to debug the worker is using the local development environment:
 
 ```sh
-# View real-time logs
+# 1. Start local worker with debug endpoints
+npm run dev:worker
+
+# 2. Use curl to test and inspect (no browser/CORS issues!)
+curl http://localhost:8787/api/debug/info | jq
+
+# 3. Inspect R2 storage
+curl 'http://localhost:8787/api/debug/r2?prefix=raw' | jq
+
+# 4. Check KV cache
+curl http://localhost:8787/api/debug/kv | jq
+
+# 5. View specific KV values
+curl 'http://localhost:8787/api/debug/kv/get?key=analytics_overview' | jq
+
+# 6. Manually trigger extraction to test pipeline
+curl -X POST http://localhost:8787/api/debug/trigger | jq
+```
+
+**Benefits of local worker debugging:**
+
+- ✅ No Cloudflare bot protection blocking curl requests
+- ✅ Full access to R2 and KV bindings (uses dev buckets)
+- ✅ Instant changes - no deployment needed
+- ✅ Debug endpoints only available in development
+- ✅ See console.log output directly in terminal
+
+#### Worker Debugging (Production)
+
+```sh
+# View real-time logs from production worker
 wrangler tail microbe-metrics-worker
 
 # View logs with JSON formatting
@@ -218,12 +333,32 @@ wrangler tail microbe-metrics-worker --format json
 
 # Filter logs by status
 wrangler tail microbe-metrics-worker --status error
+
+# Filter logs by HTTP method
+wrangler tail microbe-metrics-worker --method POST
 ```
 
-**Common Issues**:
+#### Common Issues & Solutions
 
-- Port 5173 in use: Kill process with `lsof -ti:5173 | xargs kill`
-- Build fails: Clear cache `rm -rf .svelte-kit node_modules/.cache`
+**Worker-related issues:**
+
+- **"Cannot read properties of undefined (reading 'get')"**
+  - Solution: Restart `wrangler dev` with `npm run dev:worker` (includes `--env development` flag)
+  - Root cause: Missing R2/KV bindings when running without environment flag
+
+- **403 Forbidden on curl requests**
+  - Solution: Use local development `npm run dev:worker` instead of remote mode
+  - Avoid: `wrangler dev --remote` (routes through Cloudflare with bot protection)
+
+- **Debug endpoints return 403**
+  - This is expected in production (they're disabled for security)
+  - Use `npm run dev:worker` for local debugging
+
+**General issues:**
+
+- Port 5173 in use: `lsof -ti:5173 | xargs kill`
+- Port 8787 in use: `lsof -ti:8787 | xargs kill`
+- Build fails: `rm -rf .svelte-kit node_modules/.cache`
 - Worker errors: Check `wrangler.toml` configuration
 - KV errors: Verify namespace IDs match created namespaces
 

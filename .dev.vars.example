@@ -1,0 +1,14 @@
+# Local Development Environment Variables
+# Copy this file to .dev.vars and fill in your values
+# .dev.vars is gitignored and will not be committed
+
+# Environment (should be "development" for local dev)
+ENVIRONMENT=development
+
+# Log level (debug, info, warn, error)
+LOG_LEVEL=debug
+
+# Add any other secrets or config needed for local development here
+# Example:
+# JGI_API_KEY=your_api_key_here
+# CUSTOM_CONFIG=value
