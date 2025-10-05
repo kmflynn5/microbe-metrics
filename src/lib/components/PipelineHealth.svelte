@@ -1,28 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { pipelineHealth } from "../stores/analytics";
-	import type { PipelineHealth } from "../types/analytics";
 
-	let data: PipelineHealth | null = $state(null);
-	let loading = $state(true);
-	let error = $state<string | undefined>(undefined);
-
-	// Subscribe to store
-	$effect(() => {
-		const unsubscribe = pipelineHealth.subscribe((value) => {
-			data = value;
-		});
-		return unsubscribe;
-	});
-
-	$effect(() => {
-		const unsubscribe = pipelineHealth.loading((loadingState) => {
-			loading = loadingState.isLoading;
-			error = loadingState.error?.message;
-		});
-		return unsubscribe;
-	});
-
+	// Use $ prefix for auto-subscription - Svelte handles it automatically
 	onMount(async () => {
 		await pipelineHealth.fetch();
 	});
@@ -97,49 +77,35 @@
 >
 	<div class="flex items-center justify-between mb-6">
 		<h2 class="text-xl font-semibold text-gray-900 dark:text-white">Pipeline Health</h2>
-		{#if !loading && data}
+		{#if $pipelineHealth}
 			<div class="flex items-center space-x-2">
 				<svg
-					class="w-5 h-5 {getStatusColor(data.status)}"
+					class="w-5 h-5 {getStatusColor($pipelineHealth.status)}"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke-width="1.5"
 					stroke="currentColor"
 				>
-					<path stroke-linecap="round" stroke-linejoin="round" d={getStatusIcon(data.status)} />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d={getStatusIcon($pipelineHealth.status)}
+					/>
 				</svg>
-				<span class="text-sm font-medium {getStatusColor(data.status)} capitalize">
-					{data.status}
+				<span class="text-sm font-medium {getStatusColor($pipelineHealth.status)} capitalize">
+					{$pipelineHealth.status}
 				</span>
 			</div>
 		{/if}
 	</div>
 
-	{#if error}
-		<div
-			class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-		>
-			<div class="text-red-800 dark:text-red-200 text-sm">
-				<strong>Error loading pipeline health:</strong>
-				{error}
-			</div>
-		</div>
-	{:else if loading}
-		<div class="space-y-4">
-			{#each Array(6) as _}
-				<div class="animate-pulse">
-					<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-					<div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-				</div>
-			{/each}
-		</div>
-	{:else if data}
+	{#if $pipelineHealth}
 		<!-- Pipeline Status Summary -->
 		<div class="grid grid-cols-2 gap-4 mb-6">
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Last Run</div>
 				<div class="text-lg font-semibold text-gray-900 dark:text-white">
-					{formatDate(data.lastExtraction)}
+					{formatDate($pipelineHealth.lastExtraction)}
 				</div>
 			</div>
 			<div>
@@ -151,13 +117,13 @@
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
 				<div class="text-lg font-semibold quality-high">
-					{((1 - data.errorRate) * 100).toFixed(1)}%
+					{((1 - $pipelineHealth.errorRate) * 100).toFixed(1)}%
 				</div>
 			</div>
 			<div>
 				<div class="text-sm text-gray-600 dark:text-gray-400">Avg Duration</div>
 				<div class="text-lg font-semibold text-gray-900 dark:text-white">
-					{((data.avgProcessingTime ?? 0) / 1000).toFixed(1)}s
+					{(($pipelineHealth.avgProcessingTime ?? 0) / 1000).toFixed(1)}s
 				</div>
 			</div>
 		</div>
@@ -169,12 +135,12 @@
 				<div class="flex items-center space-x-4 text-sm">
 					<div class="flex items-center space-x-1">
 						<span class="text-gray-600 dark:text-gray-400">
-							Extractions: {data.extractionCount}
+							Extractions: {$pipelineHealth.extractionCount}
 						</span>
 					</div>
 					<div class="flex items-center space-x-1">
 						<span class="text-gray-600 dark:text-gray-400">
-							Uptime: {(data.uptime ?? 0).toFixed(1)}%
+							Uptime: {($pipelineHealth.uptime ?? 0).toFixed(1)}%
 						</span>
 					</div>
 				</div>

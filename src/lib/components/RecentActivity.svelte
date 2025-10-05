@@ -1,28 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { recentActivity } from "../stores/analytics";
-	import type { ActivityItem } from "../types/analytics";
 
-	let activities: ActivityItem[] = $state([]);
-	let loading = $state(true);
-	let error = $state<string | undefined>(undefined);
-
-	// Subscribe to store
-	$effect(() => {
-		const unsubscribe = recentActivity.subscribe((value) => {
-			activities = value || [];
-		});
-		return unsubscribe;
-	});
-
-	$effect(() => {
-		const unsubscribe = recentActivity.loading((loadingState) => {
-			loading = loadingState.isLoading;
-			error = loadingState.error?.message;
-		});
-		return unsubscribe;
-	});
-
+	// Use $ prefix for auto-subscription - Svelte handles it automatically
 	onMount(async () => {
 		await recentActivity.fetch();
 	});
@@ -96,31 +76,9 @@
 		</button>
 	</div>
 
-	{#if error}
-		<div
-			class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-		>
-			<div class="text-red-800 dark:text-red-200 text-sm">
-				<strong>Error loading activity:</strong>
-				{error}
-			</div>
-		</div>
-	{:else if loading}
+	{#if $recentActivity && $recentActivity.length > 0}
 		<div class="space-y-4">
-			{#each Array(5) as _}
-				<div class="flex items-start space-x-3 animate-pulse">
-					<div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-					<div class="flex-1 space-y-2">
-						<div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-						<div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-						<div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-					</div>
-				</div>
-			{/each}
-		</div>
-	{:else if activities.length > 0}
-		<div class="space-y-4">
-			{#each activities as activity}
+			{#each $recentActivity as activity}
 				<div
 					class="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
 				>
@@ -173,13 +131,13 @@
 			<div class="grid grid-cols-2 gap-4 text-center">
 				<div>
 					<div class="text-2xl font-bold text-gray-900 dark:text-white">
-						{activities.filter((a) => a.type === "extraction").length}
+						{$recentActivity.filter((a) => a.type === "extraction").length}
 					</div>
 					<div class="text-sm text-gray-600 dark:text-gray-400">Extractions</div>
 				</div>
 				<div>
 					<div class="text-2xl font-bold text-gray-900 dark:text-white">
-						{activities.filter((a) => a.type === "processing").length}
+						{$recentActivity.filter((a) => a.type === "processing").length}
 					</div>
 					<div class="text-sm text-gray-600 dark:text-gray-400">Processing</div>
 				</div>
