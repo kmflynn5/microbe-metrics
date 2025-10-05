@@ -122,7 +122,14 @@ export class MicrobeMetricsAPI {
 }
 
 // Singleton instance
-export const api = new MicrobeMetricsAPI();
+// Use absolute URL in production to point to worker route
+// In development, relative /api works because worker runs on same host
+const apiBaseUrl =
+	typeof window !== "undefined" && window.location.hostname !== "localhost"
+		? "https://genomes.kenflynn.dev/api"
+		: "/api";
+
+export const api = new MicrobeMetricsAPI(apiBaseUrl);
 
 // Utility functions for error handling
 export function isApiError(
