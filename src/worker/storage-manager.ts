@@ -66,6 +66,65 @@ export class R2StorageManager {
 		}
 	}
 
+	async getMasterDataset(): Promise<JGIGenomeProject[]> {
+		try {
+			const object = await this.env.GENOMICS_DATA.get("master/genomes.json");
+			if (object) {
+				const data = (await object.json()) as {
+					projects: JGIGenomeProject[];
+					lastUpdated: string;
+					totalCount: number;
+				};
+				return data.projects;
+			}
+			return [];
+		} catch (error) {
+			console.error("Failed to get master dataset:", error);
+			return [];
+		}
+	}
+
+	async storeMasterDataset(
+		projects: JGIGenomeProject[],
+		metadata: { newCount: number; updatedCount: number },
+	): Promise<void> {
+		const data = {
+			projects,
+			totalCount: projects.length,
+			lastUpdated: new Date().toISOString(),
+			metadata: {
+				newGenomes: metadata.newCount,
+				updatedGenomes: metadata.updatedCount,
+			},
+		};
+
+		try {
+			await this.env.GENOMICS_DATA.put("master/genomes.json", JSON.stringify(data, null, 2), {
+				httpMetadata: {
+					contentType: "application/json",
+				},
+			});
+
+			// Cache metadata in KV for quick access
+			await this.env.METADATA_CACHE.put(
+				"master_metadata",
+				JSON.stringify({
+					totalCount: projects.length,
+					lastUpdated: data.lastUpdated,
+					...metadata,
+				}),
+				{ expirationTtl: 86400 }, // 24 hours
+			);
+
+			console.log(
+				`Master dataset updated: ${projects.length} total genomes (${metadata.newCount} new, ${metadata.updatedCount} updated)`,
+			);
+		} catch (error) {
+			console.error("Failed to store master dataset:", error);
+			throw error;
+		}
+	}
+
 	async storeAnalytics(analytics: AnalyticsData): Promise<void> {
 		const timestamp = new Date().toISOString();
 		const dateKey = timestamp.split("T")[0];
@@ -189,6 +248,13 @@ export class R2StorageManager {
 
 	async getLatestMetadata(): Promise<JGIGenomeProject[]> {
 		try {
+			// First try master dataset (contains all genomes)
+			const masterProjects = await this.getMasterDataset();
+			if (masterProjects.length > 0) {
+				return masterProjects;
+			}
+
+			// Fallback to daily extraction if master doesn't exist yet
 			const timestamp = new Date().toISOString().split("T")[0];
 			const object = await this.env.GENOMICS_DATA.get(`raw/jgi-responses/${timestamp}.json`);
 

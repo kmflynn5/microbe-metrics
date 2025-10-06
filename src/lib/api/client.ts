@@ -44,13 +44,10 @@ export class MicrobeMetricsAPI {
 				throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
 			}
 
+			// Backend already returns ApiResponse<T> format
+			// Return it directly without double-wrapping
 			const data = await response.json();
-
-			return {
-				data,
-				success: true,
-				timestamp: new Date().toISOString(),
-			};
+			return data;
 		} catch (error) {
 			clearTimeout(timeoutId);
 

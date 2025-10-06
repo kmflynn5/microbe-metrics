@@ -167,6 +167,44 @@ export class DebugUtilities {
 		});
 	}
 
+	/**
+	 * Trigger manual extraction (incremental or full)
+	 * GET /api/debug/trigger?full=true for full extraction
+	 */
+	async triggerExtraction(fullExtraction: boolean = false): Promise<Response> {
+		if (!this.isDebugEnabled()) {
+			return this.forbiddenResponse();
+		}
+
+		try {
+			const { handleScheduled } = await import("./api");
+
+			// Trigger extraction asynchronously (fire and forget)
+			handleScheduled(this.env, fullExtraction).catch((error) => {
+				console.error("Extraction failed:", error);
+			});
+
+			return this.jsonResponse({
+				data: {
+					message: `${fullExtraction ? "Full" : "Incremental"} extraction triggered`,
+					type: fullExtraction ? "full" : "incremental",
+					estimatedTime: fullExtraction ? "2-3 minutes" : "30-60 seconds",
+				},
+				success: true,
+				timestamp: new Date().toISOString(),
+			});
+		} catch (error) {
+			return this.jsonResponse(
+				{
+					error: error instanceof Error ? error.message : "Extraction trigger failed",
+					success: false,
+					timestamp: new Date().toISOString(),
+				},
+				500,
+			);
+		}
+	}
+
 	private forbiddenResponse(): Response {
 		return this.jsonResponse(
 			{

@@ -522,7 +522,7 @@ export class MicrobeMetricsAPI {
 	}
 
 	// Trigger manual extraction (development only - no auth required in dev)
-	private async handleTriggerExtraction(_request: Request): Promise<Response> {
+	private async handleTriggerExtraction(request: Request): Promise<Response> {
 		// In production, this endpoint should be disabled or properly secured
 		if (this.env.ENVIRONMENT === "production") {
 			return this.jsonResponse(
@@ -536,22 +536,37 @@ export class MicrobeMetricsAPI {
 		}
 
 		try {
-			// Step 1: Extract latest data from JGI
-			const projects = await this.jgiExtractor.extractLatestData();
+			// Check for full extraction flag
+			const url = new URL(request.url);
+			const fullExtraction = url.searchParams.get("full") === "true";
 
-			// Step 2: Store raw data in R2
+			console.log(
+				`Manual ${fullExtraction ? "FULL" : "incremental"} extraction triggered via debug endpoint`,
+			);
+
+			// Step 1: Extract latest data from JGI (with incremental/full support)
+			const { projects, stats } = await this.jgiExtractor.extractLatestData(fullExtraction);
+
+			// Step 2: Store daily extraction in R2
 			await this.storageManager.storeRawData(projects);
 
-			// Step 3: Process analytics
-			const analytics = await this.analyticsProcessor.processData(projects);
+			// Step 3: Get master dataset for analytics
+			const masterProjects = await this.storageManager.getMasterDataset();
 
-			// Step 4: Store analytics in R2 and KV cache
+			// Step 4: Process analytics from master dataset
+			const analytics = await this.analyticsProcessor.processData(masterProjects);
+
+			// Step 5: Store analytics in R2 and KV cache
 			await this.storageManager.storeAnalytics(analytics);
 
 			return this.jsonResponse({
 				data: {
-					message: "Extraction triggered successfully",
+					message: `${fullExtraction ? "Full" : "Incremental"} extraction completed successfully`,
+					extractionType: fullExtraction ? "full" : "incremental",
 					projectsExtracted: projects.length,
+					newGenomes: stats.newCount,
+					updatedGenomes: stats.updatedCount,
+					totalGenomes: stats.totalCount,
 					analytics: {
 						totalProjects: analytics.overview.totalProjects,
 						archaeaProjects: analytics.overview.archaeaProjects,
@@ -644,39 +659,54 @@ export class MicrobeMetricsAPI {
 }
 
 // Scheduled handler for cron trigger
-export async function handleScheduled(env: Env): Promise<void> {
-	console.log("Starting scheduled JGI data extraction...");
+export async function handleScheduled(env: Env, fullExtraction: boolean = false): Promise<void> {
+	console.log(
+		`Starting scheduled ${fullExtraction ? "FULL" : "incremental"} JGI data extraction...`,
+	);
 
 	try {
 		const extractor = new JGIDataExtractor(env);
 		const storageManager = new R2StorageManager(env);
 
-		// Extract latest data from JGI
-		const projects = await extractor.extractLatestData();
-		console.log(`Extracted ${projects.length} genome projects`);
+		// Extract latest data from JGI (incremental by default, full if requested)
+		const { projects, stats } = await extractor.extractLatestData(fullExtraction);
+		console.log(
+			`Extracted ${projects.length} genome projects (${stats.newCount} new, ${stats.updatedCount} updated, ${stats.totalCount} total in master)`,
+		);
 
-		// Store in R2
+		// Store daily extraction in R2 for audit trail
 		await storageManager.storeRawData(projects);
-		console.log("Projects stored successfully");
+		console.log("Daily extraction stored successfully");
 
-		// Generate analytics
+		// Get full master dataset for analytics
+		const masterProjects = await storageManager.getMasterDataset();
+
+		// Generate analytics from master dataset
 		const analyticsProcessor = new AnalyticsProcessor(env);
-		const analytics = await analyticsProcessor.processData(projects);
-		console.log("Analytics processed");
+		const analytics = await analyticsProcessor.processData(masterProjects);
+		console.log("Analytics processed from master dataset");
 
 		// Cache analytics overview
 		await env.METADATA_CACHE.put("analytics_overview", JSON.stringify(analytics.overview), {
 			expirationTtl: 86400, // 24 hours
 		});
 
-		// Log activity
+		// Log activity with detailed stats
 		const activity = {
 			id: crypto.randomUUID(),
 			type: "extraction",
 			status: "success",
-			message: `Daily JGI data extraction completed`,
+			message: fullExtraction
+				? `Full JGI data extraction completed - ${stats.totalCount} total genomes`
+				: `Incremental extraction: ${stats.newCount} new, ${stats.updatedCount} updated genomes`,
 			timestamp: new Date().toISOString(),
-			metadata: { projectsProcessed: projects.length },
+			metadata: {
+				extractionType: fullExtraction ? "full" : "incremental",
+				projectsExtracted: projects.length,
+				newGenomes: stats.newCount,
+				updatedGenomes: stats.updatedCount,
+				totalGenomes: stats.totalCount,
+			},
 		};
 
 		const recentActivity = [activity];

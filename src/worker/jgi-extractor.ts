@@ -39,15 +39,41 @@ export class JGIDataExtractor {
 		this.env = env;
 	}
 
-	async extractLatestData(): Promise<JGIGenomeProject[]> {
+	async extractLatestData(fullExtraction: boolean = false): Promise<{
+		projects: JGIGenomeProject[];
+		stats: { newCount: number; updatedCount: number; totalCount: number };
+	}> {
 		try {
+			console.log(`Starting ${fullExtraction ? "FULL" : "INCREMENTAL"} extraction from JGI API...`);
+
+			// Determine how many pages to fetch
+			const maxPages = fullExtraction ? 100 : 3; // Full: ~10k per domain, Incremental: 300 per domain
+
 			// Extract both archaea and bacteria genomes
 			const [archaeaData, bacteriaData] = await Promise.all([
-				this.extractGenomesForDomain("archaea"),
-				this.extractGenomesForDomain("bacteria"),
+				this.extractGenomesForDomain("archaea", maxPages),
+				this.extractGenomesForDomain("bacteria", maxPages),
 			]);
 
-			const allProjects = [...archaeaData, ...bacteriaData];
+			const newProjects = [...archaeaData, ...bacteriaData];
+			console.log(`Extracted ${newProjects.length} genomes from JGI API`);
+
+			// Get master dataset from R2
+			const storageManager = new (await import("./storage-manager")).R2StorageManager(this.env);
+			const masterDataset = await storageManager.getMasterDataset();
+			console.log(`Loaded ${masterDataset.length} genomes from master dataset`);
+
+			// Merge and deduplicate
+			const { merged, stats } = this.mergeAndDeduplicate(masterDataset, newProjects);
+			console.log(
+				`Merge complete: ${stats.totalCount} total (${stats.newCount} new, ${stats.updatedCount} updated)`,
+			);
+
+			// Store updated master dataset
+			await storageManager.storeMasterDataset(merged, {
+				newCount: stats.newCount,
+				updatedCount: stats.updatedCount,
+			});
 
 			// Cache the latest extraction timestamp
 			await this.env.METADATA_CACHE.put(
@@ -56,16 +82,75 @@ export class JGIDataExtractor {
 				{ expirationTtl: 86400 }, // 24 hours
 			);
 
-			return allProjects;
+			// Return only the newly extracted projects for activity logging
+			return {
+				projects: newProjects,
+				stats,
+			};
 		} catch (error) {
 			console.error("JGI extraction failed:", error);
 			throw error;
 		}
 	}
 
+	private mergeAndDeduplicate(
+		masterDataset: JGIGenomeProject[],
+		newProjects: JGIGenomeProject[],
+	): {
+		merged: JGIGenomeProject[];
+		stats: { newCount: number; updatedCount: number; totalCount: number };
+	} {
+		// Create a map of existing projects by ID for fast lookup
+		const projectMap = new Map<string, JGIGenomeProject>();
+		masterDataset.forEach((project) => projectMap.set(project.id, project));
+
+		let newCount = 0;
+		let updatedCount = 0;
+
+		// Merge new projects
+		for (const newProject of newProjects) {
+			const existing = projectMap.get(newProject.id);
+
+			if (!existing) {
+				// New genome
+				projectMap.set(newProject.id, newProject);
+				newCount++;
+			} else {
+				// Check if metadata has changed (organism updated, new gene count, etc.)
+				const hasChanges =
+					existing.sequenceLength !== newProject.sequenceLength ||
+					existing.geneCount !== newProject.geneCount ||
+					existing.status !== newProject.status ||
+					JSON.stringify(existing.metadata) !== JSON.stringify(newProject.metadata);
+
+				if (hasChanges) {
+					// Update existing genome with new data
+					projectMap.set(newProject.id, {
+						...newProject,
+						// Preserve original submission date
+						submissionDate: existing.submissionDate,
+					});
+					updatedCount++;
+				}
+				// If no changes, keep existing entry (don't count as updated)
+			}
+		}
+
+		const merged = Array.from(projectMap.values());
+
+		return {
+			merged,
+			stats: {
+				newCount,
+				updatedCount,
+				totalCount: merged.length,
+			},
+		};
+	}
+
 	private async extractGenomesForDomain(
 		domain: "archaea" | "bacteria",
-		maxPages: number = 10, // Limit to 10 pages to avoid timeouts
+		maxPages: number = 100, // Increased to fetch up to 10,000 genomes per domain
 	): Promise<JGIGenomeProject[]> {
 		const projects: JGIGenomeProject[] = [];
 		let currentPage = 0;
