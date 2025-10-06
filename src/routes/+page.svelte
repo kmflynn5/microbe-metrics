@@ -111,7 +111,9 @@
 				<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
 					Collection Growth Trends
 				</h2>
-				<TrendsChart data={trendsData} width={700} height={450} />
+				<div class="overflow-x-auto">
+					<TrendsChart data={trendsData} width={600} height={400} />
+				</div>
 			</div>
 		{/if}
 	</div>
