@@ -150,20 +150,20 @@ export class JGIDataExtractor {
 
 	private async extractGenomesForDomain(
 		domain: "archaea" | "bacteria",
-		maxPages: number = 100, // Increased to fetch up to 10,000 genomes per domain
+		maxPages: number = 100, // Fetch up to 10,000 genomes per domain (100 pages × 100 per page)
 	): Promise<JGIGenomeProject[]> {
 		const projects: JGIGenomeProject[] = [];
-		let currentPage = 0;
+		let currentPage = 1; // JGI pagination starts at 1, not 0
 		let hasMore = true;
 		const pageSize = 100; // Request 100 organisms per page
 
 		try {
-			while (hasMore && currentPage < maxPages) {
-				const startIndex = currentPage * pageSize;
-				const searchUrl = `${this.baseUrl}/search/?q=${domain}+genome&superseded=Current&dataset_type=Finished+Genome&start=${startIndex}&rows=${pageSize}`;
+			while (hasMore && currentPage <= maxPages) {
+				// Use correct JGI pagination: x (items per page), p (page number starting at 1)
+				const searchUrl = `${this.baseUrl}/search/?q=${domain}&x=${pageSize}&p=${currentPage}`;
 
 				console.log(
-					`Fetching ${domain} genomes page ${currentPage + 1}/${maxPages} from: ${searchUrl}`,
+					`Fetching ${domain} genomes page ${currentPage}/${maxPages} from: ${searchUrl}`,
 				);
 
 				const response = await fetch(searchUrl, {
@@ -174,7 +174,7 @@ export class JGIDataExtractor {
 				});
 
 				console.log(
-					`JGI API response status for ${domain} page ${currentPage + 1}: ${response.status}`,
+					`JGI API response status for ${domain} page ${currentPage}: ${response.status}`,
 				);
 
 				if (!response.ok) {
@@ -186,12 +186,11 @@ export class JGIDataExtractor {
 				const totalAvailable = data.total || 0;
 				const organismCount = data.organisms?.length || 0;
 
-				console.log(`JGI API page ${currentPage + 1} response:`, {
+				console.log(`JGI API page ${currentPage} response:`, {
 					organismCount,
 					totalAvailable,
 					hasOrganisms: !!data.organisms,
-					startIndex,
-					endIndex: startIndex + organismCount,
+					page: currentPage,
 				});
 
 				// The JGI API returns organisms, not results
@@ -215,18 +214,18 @@ export class JGIDataExtractor {
 
 				// Check if there are more pages
 				// Continue if we got results and haven't reached the total
-				const fetchedSoFar = startIndex + organismCount;
+				const fetchedSoFar = currentPage * pageSize;
 				hasMore = organismCount > 0 && fetchedSoFar < totalAvailable;
 				currentPage++;
 
 				// Add small delay between requests to be respectful to JGI API
-				if (hasMore && currentPage < maxPages) {
+				if (hasMore && currentPage <= maxPages) {
 					await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 				}
 			}
 
 			console.log(
-				`Successfully extracted ${projects.length} ${domain} genomes across ${currentPage} pages`,
+				`Successfully extracted ${projects.length} ${domain} genomes across ${currentPage - 1} pages`,
 			);
 			return projects;
 		} catch (error) {
@@ -239,28 +238,32 @@ export class JGIDataExtractor {
 		organism: any,
 		domain: string,
 	): Promise<JGIGenomeProject | null> {
-		// The organism object from JGI has a different structure
-		// Log first organism to see structure
-		if (!organism.name && !organism.organism_name) {
-			console.warn("Organism missing name:", JSON.stringify(organism).substring(0, 200));
+		// JGI API uses 'id' and 'name' fields (not organism_id, organism_name)
+		if (!organism.name && !organism.id) {
+			console.warn("Organism missing required fields:", JSON.stringify(organism).substring(0, 200));
 			return null;
 		}
 
-		const organismName = organism.organism_name || organism.name || "Unknown";
+		const organismName = organism.name || "Unknown";
+		const organismId = organism.id?.toString() || Math.random().toString();
 		const metadata = this.parseOrganismMetadata(organismName, domain);
 
 		const project: JGIGenomeProject = {
-			id: organism.organism_id?.toString() || organism.id?.toString() || Math.random().toString(),
+			id: organismId,
 			name: organismName,
 			organism: organismName,
-			sequenceType: "Genome Assembly",
+			sequenceType: organism.label || "Genome Assembly",
 			status: "available",
-			submissionDate: organism.added_date || new Date().toISOString(),
-			releaseDate: organism.release_date,
-			sequenceLength: organism.est_size,
-			geneCount: organism.gene_count,
+			submissionDate:
+				organism.proposal_acceptance_date ||
+				organism.work_completion_date ||
+				new Date().toISOString(),
+			releaseDate: organism.work_completion_date,
+			sequenceLength: organism.fileSize,
+			geneCount: organism.file_total,
 			metadata: {
 				...metadata,
+				// Use available taxonomy fields if present
 				phylum: organism.phylum,
 				class: organism.class_name,
 				order: organism.order_name,
@@ -270,7 +273,7 @@ export class JGIDataExtractor {
 				strain: organism.strain,
 			},
 			urls: {
-				portal: organism.portal_url || `https://genome.jgi.doe.gov/portal/${organism.organism_id}`,
+				portal: `https://genome.jgi.doe.gov/portal/${organismId}`,
 				download: organism.download_url,
 			},
 			extractedAt: new Date().toISOString(),
