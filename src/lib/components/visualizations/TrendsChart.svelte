@@ -217,7 +217,9 @@
 </script>
 
 <div class="trends-chart">
-	<h3 class="chart-title">{title}</h3>
+	{#if title}
+		<h3 class="chart-title">{title}</h3>
+	{/if}
 	<div bind:this={chartContainer} class="chart-container"></div>
 	{#if data.length === 0}
 		<div class="empty-state">
@@ -229,16 +231,12 @@
 <style>
 	.trends-chart {
 		width: 100%;
-		background: white;
-		border-radius: 8px;
-		padding: 1.5rem;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
 	.chart-title {
 		font-size: 1.25rem;
 		font-weight: 600;
-		margin-bottom: 1rem;
+		margin-bottom: 1.5rem;
 		color: #1f2937;
 	}
 
@@ -254,10 +252,6 @@
 		justify-content: center;
 		min-height: 200px;
 		color: #6b7280;
-	}
-
-	:global(.dark) .trends-chart {
-		background: #1f2937;
 	}
 
 	:global(.dark) .chart-title {
