@@ -3,11 +3,19 @@
 	import PipelineHealth from "$lib/components/PipelineHealth.svelte";
 	import RecentActivity from "$lib/components/RecentActivity.svelte";
 	import DomainChart from "$lib/components/visualizations/DomainChart.svelte";
+	import TrendsChart from "$lib/components/visualizations/TrendsChart.svelte";
 	import { analyticsOverview } from "$lib/stores/analytics";
 	import { onMount } from "svelte";
 	import type { AnalyticsOverview as AnalyticsOverviewType } from "$lib/types/analytics";
 
+	interface TrendDataPoint {
+		date: string;
+		count: number;
+		domain: string;
+	}
+
 	let data: AnalyticsOverviewType | null = $state(null);
+	let trendsData: TrendDataPoint[] = $state([]);
 
 	// Subscribe to overview data for visualization
 	$effect(() => {
@@ -19,7 +27,34 @@
 
 	onMount(async () => {
 		await analyticsOverview.fetch();
+		await fetchTrendsData();
 	});
+
+	async function fetchTrendsData() {
+		// Generate mock data for now - will be replaced with real API call
+		const now = new Date();
+		const mockData: TrendDataPoint[] = [];
+
+		for (let i = 30; i >= 0; i--) {
+			const date = new Date(now);
+			date.setDate(date.getDate() - i);
+			const dateStr = date.toISOString().split("T")[0];
+
+			mockData.push({
+				date: dateStr,
+				count: Math.floor(50 + Math.random() * 20 + i * 2),
+				domain: "Archaea",
+			});
+
+			mockData.push({
+				date: dateStr,
+				count: Math.floor(60 + Math.random() * 25 + i * 2.5),
+				domain: "Bacteria",
+			});
+		}
+
+		trendsData = mockData;
+	}
 </script>
 
 <svelte:head>
@@ -47,9 +82,10 @@
 		<AnalyticsOverview />
 	</div>
 
-	<!-- Domain Distribution Visualization -->
-	{#if data && (data.archaeaProjects > 0 || data.bacteriaProjects > 0)}
-		<div class="mb-8">
+	<!-- Visualizations Grid -->
+	<div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+		<!-- Domain Distribution -->
+		{#if data && (data.archaeaProjects > 0 || data.bacteriaProjects > 0)}
 			<div
 				class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
 			>
@@ -60,13 +96,25 @@
 					<DomainChart
 						archaeaCount={data.archaeaProjects}
 						bacteriaCount={data.bacteriaProjects}
-						width={500}
-						height={500}
+						width={450}
+						height={450}
 					/>
 				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
+
+		<!-- Growth Trends -->
+		{#if trendsData.length > 0}
+			<div
+				class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
+			>
+				<h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+					Collection Growth Trends
+				</h2>
+				<TrendsChart data={trendsData} width={700} height={450} />
+			</div>
+		{/if}
+	</div>
 
 	<!-- Pipeline Health and Recent Activity -->
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

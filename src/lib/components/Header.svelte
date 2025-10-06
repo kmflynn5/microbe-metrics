@@ -30,6 +30,7 @@
 
 	const navigation = [
 		{ name: "Dashboard", href: "/", current: false },
+		{ name: "Taxonomy", href: "/taxonomy", current: false },
 		{ name: "Analytics", href: "/analytics", current: false },
 		{ name: "Organisms", href: "/organisms", current: false },
 		{ name: "Pipeline", href: "/pipeline", current: false },
